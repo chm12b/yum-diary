@@ -1,26 +1,58 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens
+ * Color values are defined in src/lib/theme.ts and mirrored here for Tailwind.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Colors */
+  --milk-tea: #f6efe7;
+  --rice-white: #fdf8f3;
+  --khaki: #eadcc6;
+  --warm-gray: #f2e3cf;
+  --caramel: #b98f6b;
+  --deep-brown: #8c6b4f;
+  --cocoa: #a67c52;
+
+  /* Layout */
+  --app-max-width: 28rem;
+  --bottom-nav-height: 4.5rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  /* Colors */
+  --color-milk-tea: var(--milk-tea);
+  --color-rice-white: var(--rice-white);
+  --color-khaki: var(--khaki);
+  --color-warm-gray: var(--warm-gray);
+  --color-caramel: var(--caramel);
+  --color-deep-brown: var(--deep-brown);
+  --color-cocoa: var(--cocoa);
+
+  /* Layout */
+  --spacing-bottom-nav: var(--bottom-nav-height);
+  --container-app: var(--app-max-width);
+
+  /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@utility max-w-app {
+  max-width: var(--app-max-width);
+}
+
+@utility pb-bottom-nav {
+  padding-bottom: var(--bottom-nav-height);
+}
+
+@utility h-bottom-nav {
+  height: var(--bottom-nav-height);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--milk-tea);
+  color: var(--deep-brown);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
