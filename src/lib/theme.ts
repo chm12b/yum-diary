@@ -6,6 +6,7 @@ export const colors = {
   caramel: "#B98F6B",
   deepBrown: "#8C6B4F",
   cocoa: "#A67C52",
+  softGray: "#CFC7BE",
 } as const;
 
 export const layout = {

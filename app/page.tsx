@@ -1,7 +1,7 @@
 import BunnyHero from "@/components/home/BunnyHero";
 import HomeGreeting from "@/components/home/HomeGreeting";
+import HomeSearchSection from "@/components/home/HomeSearchSection";
 import MenuList from "@/components/home/MenuList";
-import SearchBar from "@/components/home/SearchBar";
 import TopBar from "@/components/layout/TopBar";
 
 export default function Home() {
@@ -11,7 +11,7 @@ export default function Home() {
       <HomeGreeting />
       <BunnyHero />
       <MenuList />
-      <SearchBar />
+      <HomeSearchSection />
     </>
   );
 }
