@@ -26,3 +26,26 @@ export type Restaurant = {
   lastVisited?: string;
   notes?: string;
 };
+
+export type OpeningHours = {
+  slots: string[];
+  todayStatusLabel: string;
+};
+
+export type HeroImage = {
+  id: string;
+  url: string;
+  alt?: string;
+};
+
+export type RestaurantDetail = Restaurant & {
+  images: HeroImage[];
+  openingHours: OpeningHours;
+  phoneNumber?: string;
+  address?: string;
+  menuImages: string[];
+  latitude?: number;
+  longitude?: number;
+  lastOrder?: string;
+  myRating?: number;
+};

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import CategoryFilter from "@/components/restaurants/CategoryFilter";
@@ -11,6 +12,7 @@ import type { RestaurantCategoryId } from "@/src/lib/restaurant-types";
 import { categoryFilters, mockRestaurants } from "@/src/lib/restaurants-data";
 
 export default function RestaurantListPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategoryId, setActiveCategoryId] =
     useState<RestaurantCategoryId>("all");
@@ -39,7 +41,10 @@ export default function RestaurantListPage() {
         />
       </section>
       <section className="px-5 pt-6 pb-8">
-        <RestaurantList restaurants={filteredRestaurants} />
+        <RestaurantList
+          restaurants={filteredRestaurants}
+          onRestaurantClick={(id) => router.push(`/restaurants/${id}`)}
+        />
       </section>
     </>
   );

@@ -21,6 +21,8 @@ export const mockRestaurants: Restaurant[] = [
     averagePrice: 250,
     category: "japanese",
     isFavorite: false,
+    lastVisited: "2026-06-10",
+    notes: "湯頭濃郁，午間不用排太久。",
   },
   {
     id: "grandma-braised-pork",
@@ -33,6 +35,8 @@ export const mockRestaurants: Restaurant[] = [
     averagePrice: 80,
     category: "chinese",
     isFavorite: true,
+    lastVisited: "2026-06-05",
+    notes: "滷汁偏甜，很下飯。",
   },
   {
     id: "little-happiness-coffee",
