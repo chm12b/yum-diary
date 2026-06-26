@@ -1,7 +1,7 @@
 import BunnyHero from "@/components/home/BunnyHero";
+import HomeEntryList from "@/components/home/HomeEntryList";
 import HomeGreeting from "@/components/home/HomeGreeting";
 import HomeSearchSection from "@/components/home/HomeSearchSection";
-import MenuList from "@/components/home/MenuList";
 import TopBar from "@/components/layout/TopBar";
 
 export default function Home() {
@@ -10,7 +10,7 @@ export default function Home() {
       <TopBar />
       <HomeGreeting />
       <BunnyHero />
-      <MenuList />
+      <HomeEntryList />
       <HomeSearchSection />
     </>
   );
