@@ -1,4 +1,4 @@
-import Link from "next/link";
+import EntryCard from "@/components/ui/EntryCard";
 
 type HomeEntryItem = {
   id: string;
@@ -24,20 +24,18 @@ const homeEntries: HomeEntryItem[] = [
 
 export default function HomeEntryList() {
   return (
-    <section className="flex flex-col gap-3 px-5 pt-3">
+    <section className="flex flex-col gap-4 px-5 pt-4">
       {homeEntries.map((entry) => (
-        <Link
+        <EntryCard
           key={entry.id}
           href={entry.href}
-          className="flex items-center gap-3 rounded-2xl bg-rice-white px-4 py-4"
-        >
-          <span className="text-2xl leading-none" aria-hidden>
-            {entry.emoji}
-          </span>
-          <span className="text-base font-medium text-deep-brown">
-            {entry.label}
-          </span>
-        </Link>
+          label={entry.label}
+          leading={
+            <span aria-hidden className="leading-none">
+              {entry.emoji}
+            </span>
+          }
+        />
       ))}
     </section>
   );

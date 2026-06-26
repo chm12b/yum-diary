@@ -8,7 +8,7 @@ export default function HomeSearchSection() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <section className="px-5 pt-4 pb-8">
+    <section className="px-5 pt-5 pb-10">
       <SearchBar value={searchQuery} onChange={setSearchQuery} />
     </section>
   );
