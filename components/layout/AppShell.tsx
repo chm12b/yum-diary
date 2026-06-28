@@ -9,7 +9,7 @@ type AppShellProps = {
 export default function AppShell({ children }: AppShellProps) {
   return (
     <>
-      <div className="mx-auto min-h-dvh w-full max-w-app bg-milk-tea pb-bottom-nav">
+      <div className="mx-auto min-h-dvh w-full max-w-app bg-cream-bg pb-bottom-nav">
         {children}
       </div>
       <BottomNav />

@@ -1,0 +1,16 @@
+export const homeAssets = {
+  bunnyDesk: "/home/bunny-desk.png",
+  iconNearbyFood: "/home/icon-nearby-food.png",
+  iconFrequentRestaurants: "/home/icon-frequent-restaurants.png",
+  iconDice: "/home/icon-dice.png",
+  entryArrow: "/home/entry-arrow.png",
+  stickerFlowerPink: "/home/sticker-flower-pink.png",
+  washiTapePink: "/home/washi-tape-pink.png",
+  washiTapeKhaki: "/home/washi-tape-khaki.png",
+  memoBunny: "/home/memo-bunny.png",
+  memoHeart: "/home/memo-heart.png",
+  navHome: "/home/nav-home.png",
+  navRestaurants: "/home/nav-restaurants.png",
+  navFavorites: "/home/nav-favorites.png",
+  navProfile: "/home/nav-profile.png",
+} as const;

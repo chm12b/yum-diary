@@ -1,29 +1,27 @@
-import { Dices } from "lucide-react";
 import Image from "next/image";
 
-import BunnyMessage from "@/components/home/BunnyMessage";
 import PrimaryButton from "@/components/ui/PrimaryButton";
+import { homeAssets } from "@/src/lib/home-assets";
 
 export default function BunnyHero() {
   return (
-    <section className="flex flex-col items-center gap-3 px-5 pt-3">
-      <div className="relative h-32 w-32">
+    <section className="flex flex-col gap-4 px-5 pt-2">
+      <div className="relative aspect-[853/572] w-full">
         <Image
-          src="/bunny/bunny.svg"
-          alt="兔兔吉祥物"
+          src={homeAssets.bunnyDesk}
+          alt="兔兔書桌場景"
           fill
-          className="object-contain"
+          className="object-cover object-center"
           priority
+          sizes="(max-width: 28rem) 100vw, 28rem"
         />
       </div>
-      <BunnyMessage />
-      <div className="w-full pt-1">
-        <PrimaryButton
-          title="幫我決定"
-          subtitle="讓兔兔幫你挑選吧～"
-          icon={<Dices className="h-7 w-7" strokeWidth={2} />}
-        />
-      </div>
+      <PrimaryButton
+        title="幫我決定"
+        subtitle="讓兔兔幫你挑選吧～"
+        iconSrc={homeAssets.iconDice}
+        trailingIconSrc={homeAssets.entryArrow}
+      />
     </section>
   );
 }

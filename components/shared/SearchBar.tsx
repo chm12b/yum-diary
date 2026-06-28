@@ -16,7 +16,7 @@ export default function SearchBar({
   return (
     <div className="relative">
       <Search
-        className="pointer-events-none absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-cocoa"
+        className="pointer-events-none absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-text-secondary"
         strokeWidth={2}
       />
       <input
@@ -26,7 +26,7 @@ export default function SearchBar({
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
-        className="h-12 w-full rounded-full bg-rice-white pr-4 pl-11 text-base text-deep-brown placeholder:text-cocoa/60 focus:outline-none"
+        className="h-12 w-full rounded-full border border-border bg-rice-white pr-4 pl-11 text-base text-text-primary placeholder:text-text-secondary/70 focus:outline-none"
       />
     </div>
   );

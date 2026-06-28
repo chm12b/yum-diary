@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 /*
- * Design tokens
- * Color values are defined in src/lib/theme.ts and mirrored here for Tailwind.
+ * Design tokens — synced with src/lib/theme.ts
  */
 
 :root {
   /* Colors */
+  --cream-bg: #fdf0e2;
   --milk-tea: #f6efe7;
   --rice-white: #fdf8f3;
   --khaki: #eadcc6;
@@ -15,19 +15,24 @@
   --deep-brown: #8c6b4f;
   --cocoa: #a67c52;
   --soft-gray: #cfc7be;
+  --sakura-pink: #f7c9cf;
+  --text-primary: #6d5240;
+  --text-secondary: #a68d7b;
+  --border: #e6d8c7;
 
   /* Layout */
   --app-max-width: 28rem;
-  --bottom-nav-height: 4.5rem;
+  --bottom-nav-height: 5.625rem;
 
   /* Shadows */
-  --shadow-soft: 0 4px 18px rgb(140 107 79 / 0.08);
+  --shadow-soft: 0 2px 10px rgb(109 82 64 / 0.06);
   --shadow-card: 0 6px 24px rgb(140 107 79 / 0.07);
   --shadow-button: 0 6px 0 0 #dcc7b2, 0 10px 24px rgb(140 107 79 / 0.12);
+  --shadow-pink-button: 0 5px 0 0 #e8b0b7;
 }
 
 @theme inline {
-  /* Colors */
+  --color-cream-bg: var(--cream-bg);
   --color-milk-tea: var(--milk-tea);
   --color-rice-white: var(--rice-white);
   --color-khaki: var(--khaki);
@@ -36,14 +41,18 @@
   --color-deep-brown: var(--deep-brown);
   --color-cocoa: var(--cocoa);
   --color-soft-gray: var(--soft-gray);
+  --color-sakura-pink: var(--sakura-pink);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
 
-  /* Layout */
   --spacing-bottom-nav: var(--bottom-nav-height);
   --container-app: var(--app-max-width);
 
-  /* Typography */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-zen-maru);
+  --font-hand: var(--font-ma-shan);
 }
 
 @utility max-w-app {
@@ -70,8 +79,20 @@
   box-shadow: var(--shadow-button);
 }
 
+@utility shadow-pink-button {
+  box-shadow: var(--shadow-pink-button);
+}
+
+@utility home-grid-bg {
+  background-color: var(--cream-bg);
+  background-image:
+    linear-gradient(rgb(230 216 199 / 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(230 216 199 / 0.35) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
 body {
-  background: var(--milk-tea);
-  color: var(--deep-brown);
+  background: var(--cream-bg);
+  color: var(--text-primary);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }

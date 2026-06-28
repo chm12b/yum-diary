@@ -1,9 +1,12 @@
+import Image from "next/image";
 import type { ReactNode } from "react";
 
 type PrimaryButtonProps = {
   title: string;
   subtitle?: string;
   icon?: ReactNode;
+  iconSrc?: string;
+  trailingIconSrc?: string;
   onClick?: () => void;
   className?: string;
 };
@@ -12,6 +15,8 @@ export default function PrimaryButton({
   title,
   subtitle,
   icon,
+  iconSrc,
+  trailingIconSrc,
   onClick,
   className = "",
 }: PrimaryButtonProps) {
@@ -19,17 +24,40 @@ export default function PrimaryButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-full border border-khaki/80 bg-khaki px-6 py-4 text-left shadow-button ${className}`}
+      className={`mx-auto h-20 w-[300px] rounded-[1.75rem] border border-border bg-sakura-pink px-5 py-3 text-left shadow-pink-button transition-transform active:scale-[0.98] ${className}`}
     >
-      {icon ? <span className="shrink-0 text-deep-brown">{icon}</span> : null}
-      <span className="flex flex-col gap-0.5">
-        <span className="text-lg font-bold leading-tight text-deep-brown">
+      <span className="flex items-center gap-3">
+        {iconSrc ? (
+          <Image
+            src={iconSrc}
+            alt=""
+            width={60}
+            height={60}
+            aria-hidden
+            className="h-[60px] w-[60px] shrink-0 object-contain"
+          />
+        ) : icon ? (
+          <span className="shrink-0 text-text-primary">{icon}</span>
+        ) : null}
+        <span className="min-w-0 flex-1 text-[25px] font-bold leading-tight text-text-primary">
           {title}
         </span>
-        {subtitle ? (
-          <span className="text-sm font-normal text-cocoa">{subtitle}</span>
+        {trailingIconSrc ? (
+          <Image
+            src={trailingIconSrc}
+            alt=""
+            width={28}
+            height={28}
+            aria-hidden
+            className="h-7 w-7 shrink-0 object-contain"
+          />
         ) : null}
       </span>
+      {subtitle ? (
+        <span className="mt-[15px] block pl-[4.5rem] text-sm text-text-secondary">
+          {subtitle}
+        </span>
+      ) : null}
     </button>
   );
 }

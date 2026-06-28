@@ -1,45 +1,83 @@
 "use client";
 
-import { Heart, Home, Store, User, type LucideIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import type { NavItemId } from "@/src/lib/nav-data";
 import { navItems } from "@/src/lib/nav-data";
 
-const navIcons: Record<NavItemId, LucideIcon> = {
-  home: Home,
-  restaurants: Store,
-  favorites: Heart,
-  profile: User,
-};
+function FabPlusIcon() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 24 24"
+      fill="none"
+      className="h-7 w-7 text-text-primary"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      strokeLinecap="round"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function isNavActive(pathname: string, href: string) {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
 
 export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 h-bottom-nav bg-khaki">
-      <div className="mx-auto flex h-full max-w-app items-center justify-around px-2">
+    <nav className="fixed inset-x-0 bottom-0 z-10 h-bottom-nav border-t border-border bg-rice-white/95">
+      <div className="relative mx-auto flex h-full max-w-app items-end justify-around px-2 pb-2">
         {navItems.map((item) => {
-          const Icon = navIcons[item.id];
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+          if (item.isFab) {
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-label={item.label}
+                className="relative -top-5 flex h-14 w-14 shrink-0 translate-y-[5px] items-center justify-center gap-0 rounded-full border-2 border-border bg-sakura-pink shadow-pink-button transition-transform active:scale-[0.98]"
+              >
+                <FabPlusIcon />
+              </button>
+            );
+          }
+
+          const href = item.href!;
+          const isActive = isNavActive(pathname, href);
 
           return (
             <Link
               key={item.id}
-              href={item.href}
-              className="flex min-w-14 flex-col items-center gap-1"
+              href={href}
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
+              className="flex min-w-12 flex-1 flex-col items-center gap-1 transition-transform active:scale-[0.98]"
             >
-              <Icon
-                className={`h-6 w-6 ${isActive ? "text-deep-brown" : "text-cocoa/70"}`}
-                strokeWidth={2}
-              />
+              <span className="relative flex h-[72px] w-[80px] translate-y-[10px] items-center justify-center">
+                {isActive ? (
+                  <span
+                    aria-hidden
+                    className="absolute h-[60px] w-[60px] rounded-full bg-sakura-pink/40"
+                  />
+                ) : null}
+                <Image
+                  src={item.iconSrc!}
+                  alt=""
+                  width={80}
+                  height={72}
+                  aria-hidden
+                  className={`relative z-10 h-[72px] w-[80px] object-contain ${
+                    isActive ? "opacity-100" : "opacity-50"
+                  }`}
+                />
+              </span>
               <span
-                className={`text-xs ${
-                  isActive ? "font-medium text-deep-brown" : "text-cocoa/70"
+                className={`text-xs font-medium leading-none ${
+                  isActive ? "text-text-primary" : "text-text-secondary/70"
                 }`}
               >
                 {item.label}

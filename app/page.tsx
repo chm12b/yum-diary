@@ -6,12 +6,12 @@ import TopBar from "@/components/layout/TopBar";
 
 export default function Home() {
   return (
-    <>
+    <div className="home-grid-bg min-h-full">
       <TopBar />
       <HomeGreeting />
       <BunnyHero />
       <HomeEntryList />
       <HomeSearchSection />
-    </>
+    </div>
   );
 }

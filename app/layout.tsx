@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Ma_Shan_Zheng, Zen_Maru_Gothic } from "next/font/google";
 
 import AppShell from "@/components/layout/AppShell";
 import "./globals.css";
@@ -14,8 +14,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const zenMaru = Zen_Maru_Gothic({
+  variable: "--font-zen-maru",
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+});
+
+const maShan = Ma_Shan_Zheng({
+  variable: "--font-ma-shan",
+  subsets: ["latin"],
+  weight: "400",
+});
+
 export const metadata: Metadata = {
-  title: "屬於你的美食日記",
+  title: "Yum Diary",
   description: "屬於你的美食日記",
 };
 
@@ -27,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh-TW"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${zenMaru.variable} ${maShan.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
         <AppShell>{children}</AppShell>
