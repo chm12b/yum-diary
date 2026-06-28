@@ -10,7 +10,7 @@ export default function TopBar() {
       >
         <Menu className="h-6 w-6" strokeWidth={2} />
       </button>
-      <h1 className="text-center font-hand text-2xl text-text-primary">
+      <h1 className="text-center font-mono text-2xl text-text-primary">
         Yum Diary
       </h1>
       <button

@@ -24,7 +24,7 @@ export default function PrimaryButton({
     <button
       type="button"
       onClick={onClick}
-      className={`mx-auto h-20 w-[300px] rounded-[1.75rem] border border-border bg-sakura-pink px-5 py-3 text-left shadow-pink-button transition-transform active:scale-[0.98] ${className}`}
+      className={`mx-auto -mt-4 -mb-4 h-20 w-[300px] rounded-[1.75rem] border border-border bg-sakura-pink px-5 py-3 text-left shadow-pink-button transition-transform active:scale-[0.98] ${className}`}
     >
       <span className="flex items-center gap-3">
         {iconSrc ? (
@@ -54,7 +54,7 @@ export default function PrimaryButton({
         ) : null}
       </span>
       {subtitle ? (
-        <span className="mt-[15px] block pl-[4.5rem] text-sm text-text-secondary">
+        <span className="mt-3 block pl-[4.5rem] text-sm text-text-secondary">
           {subtitle}
         </span>
       ) : null}

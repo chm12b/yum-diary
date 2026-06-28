@@ -26,7 +26,7 @@ export default function SearchBar({
         placeholder={placeholder}
         autoComplete="off"
         spellCheck={false}
-        className="h-12 w-full rounded-full border border-border bg-rice-white pr-4 pl-11 text-base text-text-primary placeholder:text-text-secondary/70 focus:outline-none"
+        className="-my-[5px] h-12 w-full rounded-full border border-border bg-rice-white pr-4 pl-11 text-base text-text-primary placeholder:text-text-secondary/70 focus:outline-none"
       />
     </div>
   );

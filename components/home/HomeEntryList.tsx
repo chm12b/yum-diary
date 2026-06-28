@@ -20,7 +20,7 @@ const homeEntries = [
 
 export default function HomeEntryList() {
   return (
-    <section className="flex flex-col gap-4 px-5 pt-10">
+    <section className="flex flex-col gap-4 px-5 pt-[50px]">
       {homeEntries.map((entry) => (
         <EntryCard
           key={entry.id}
