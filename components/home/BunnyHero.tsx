@@ -6,7 +6,7 @@ import { homeAssets } from "@/src/lib/home-assets";
 export default function BunnyHero() {
   return (
     <section className="flex flex-col gap-4 px-5 pt-2">
-      <div className="relative h-[260px] w-full">
+      <div className="relative h-[250px] w-full">
         <Image
           src={homeAssets.bunnyDesk}
           alt="兔兔書桌場景"
