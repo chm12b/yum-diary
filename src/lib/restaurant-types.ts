@@ -20,6 +20,9 @@ export type Restaurant = {
   isOpen: boolean;
   distanceMeters: number;
   averagePrice: number;
+  priceMin: number;
+  priceMax: number;
+  tags: string[];
   category: Exclude<RestaurantCategoryId, "all">;
   isFavorite: boolean;
   googlePlaceId?: string;

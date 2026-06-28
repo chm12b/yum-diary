@@ -16,8 +16,8 @@ export default function StarRating({ rating, reviewCount }: StarRatingProps) {
             key={index}
             className={`h-3.5 w-3.5 ${
               index < filledStarCount
-                ? "fill-caramel text-caramel"
-                : "text-cocoa/30"
+                ? "fill-amber-400 text-amber-400"
+                : "text-cocoa/25"
             }`}
             strokeWidth={2}
           />

@@ -1,15 +1,23 @@
+import Image from "next/image";
+
+import { homeAssets } from "@/src/lib/home-assets";
+
 type OpenStatusBadgeProps = {
   isOpen: boolean;
+  className?: string;
 };
 
-export default function OpenStatusBadge({ isOpen }: OpenStatusBadgeProps) {
+export default function OpenStatusBadge({
+  isOpen,
+  className = "",
+}: OpenStatusBadgeProps) {
   return (
-    <span
-      className={`inline-flex w-fit rounded-full px-2 py-0.5 text-xs ${
-        isOpen ? "bg-warm-gray text-deep-brown" : "bg-soft-gray text-cocoa"
-      }`}
-    >
-      {isOpen ? "營業中" : "已打烊"}
-    </span>
+    <Image
+      src={isOpen ? homeAssets.restaurantOpen : homeAssets.restaurantClose}
+      alt={isOpen ? "營業中" : "已打烊"}
+      width={72}
+      height={32}
+      className={`mt-0 mb-[5px] h-[50px] w-[80px] object-contain ${className}`}
+    />
   );
 }

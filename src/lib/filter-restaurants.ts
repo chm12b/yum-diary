@@ -22,10 +22,12 @@ export function filterRestaurantsBySearch(
 
   return restaurants.filter((restaurant) => {
     const categoryLabel = getCategoryLabel(restaurant.category) ?? "";
+    const tagText = restaurant.tags.join(" ");
 
     return (
       restaurant.name.toLowerCase().includes(normalizedQuery) ||
-      categoryLabel.toLowerCase().includes(normalizedQuery)
+      categoryLabel.toLowerCase().includes(normalizedQuery) ||
+      tagText.toLowerCase().includes(normalizedQuery)
     );
   });
 }

@@ -11,7 +11,7 @@ export default function RestaurantList({
   onRestaurantClick,
 }: RestaurantListProps) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {restaurants.map((restaurant) => (
         <RestaurantCard
           key={restaurant.id}
