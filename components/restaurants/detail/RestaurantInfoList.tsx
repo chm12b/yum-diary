@@ -1,4 +1,4 @@
-import { Clock, MapPin, Phone, CalendarOff } from "lucide-react";
+import { Clock, Globe, MapPin, NotebookPen, Phone, CalendarOff } from "lucide-react";
 import Image from "next/image";
 
 import RestaurantInfoItem from "@/components/restaurants/detail/RestaurantInfoItem";
@@ -12,7 +12,7 @@ type RestaurantInfoListProps = {
 export default function RestaurantInfoList({
   restaurant,
 }: RestaurantInfoListProps) {
-  const { openingHours, phoneNumber, address } = restaurant;
+  const { openingHours, phoneNumber, address, websiteUrl, notes } = restaurant;
   const closedDaysLabel =
     openingHours.closedDays.length > 0
       ? openingHours.closedDays.join("、")
@@ -60,6 +60,20 @@ export default function RestaurantInfoList({
             title="公休日"
             value={closedDaysLabel}
           />
+          {websiteUrl ? (
+            <RestaurantInfoItem
+              icon={Globe}
+              title="官方網站"
+              value={websiteUrl}
+            />
+          ) : null}
+          {notes ? (
+            <RestaurantInfoItem
+              icon={NotebookPen}
+              title="備註"
+              value={notes}
+            />
+          ) : null}
         </div>
         <Image
           src={homeAssets.stickerFlowerPink}

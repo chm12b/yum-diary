@@ -9,7 +9,13 @@ import { homeAssets } from "@/src/lib/home-assets";
 const iconButtonClass =
   "flex h-9 w-9 items-center justify-center rounded-full border border-border bg-rice-white/95 text-deep-brown shadow-soft";
 
-export default function AddRestaurantHeader() {
+type AddRestaurantHeaderProps = {
+  title?: string;
+};
+
+export default function AddRestaurantHeader({
+  title = "新增餐廳",
+}: AddRestaurantHeaderProps) {
   const router = useRouter();
 
   return (
@@ -32,7 +38,7 @@ export default function AddRestaurantHeader() {
           className="h-5 w-5 object-contain"
         />
         <h1 className="font-display text-base font-bold text-deep-brown">
-          新增餐廳
+          {title}
         </h1>
       </div>
       <button

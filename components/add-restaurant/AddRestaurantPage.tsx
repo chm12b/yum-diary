@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -16,13 +17,17 @@ import type {
 import {
   createEmptyPeriodRow,
   MAX_BUSINESS_HOUR_PERIODS,
+  parseBusinessHoursForForm,
   toPeriodRows,
 } from "@/src/lib/restaurants/business-hours";
 import { mapGoogleCategory } from "@/src/lib/restaurants/category";
 import { getCurrentGroup } from "@/src/services/groups/group.service";
 import {
   createRestaurant,
+  getRestaurant,
+  updateRestaurant,
   type CreateRestaurantInput,
+  type UpdateRestaurantInput,
 } from "@/src/services/restaurant";
 
 const FILL_NOTICE_MS = 2000;
@@ -37,8 +42,15 @@ type ToastState = {
   message: string;
 } | null;
 
-export default function AddRestaurantPage() {
+type AddRestaurantPageProps = {
+  restaurantId?: string;
+};
+
+export default function AddRestaurantPage({
+  restaurantId,
+}: AddRestaurantPageProps) {
   const router = useRouter();
+  const isEdit = Boolean(restaurantId);
 
   const [name, setName] = useState("");
   const [categoryLabel, setCategoryLabel] = useState("");
@@ -60,6 +72,8 @@ export default function AddRestaurantPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [fillNotice, setFillNotice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(isEdit);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
   const noticeTimerRef = useRef<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -74,6 +88,62 @@ export default function AddRestaurantPage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!restaurantId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadRestaurant() {
+      setIsLoadingRestaurant(true);
+      setLoadError(null);
+
+      try {
+        const row = await getRestaurant(restaurantId!);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!row) {
+          setLoadError("找不到這間餐廳");
+          setIsLoadingRestaurant(false);
+          return;
+        }
+
+        const hours = parseBusinessHoursForForm(row.business_hours);
+
+        setName(row.name);
+        setCategoryLabel(row.category);
+        setPhone(row.phone ?? "");
+        setWebsite(row.website_url ?? "");
+        setAddress(row.address ?? "");
+        setNotes(row.notes ?? "");
+        setPeriods(hours.periods);
+        setClosedDays(hours.closedDays);
+        setOpenAllYear(hours.openAllYear);
+        setIrregularHolidays(hours.irregularHolidays);
+        setGooglePlaceId(row.google_place_id);
+        setSpecialHours(false);
+        setWeeklyHours(null);
+        setGooglePhotoName(null);
+        setIsLoadingRestaurant(false);
+      } catch {
+        if (!cancelled) {
+          setLoadError("載入餐廳失敗");
+          setIsLoadingRestaurant(false);
+        }
+      }
+    }
+
+    void loadRestaurant();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurantId]);
 
   function showFillNotice() {
     setFillNotice(true);
@@ -160,7 +230,7 @@ export default function AddRestaurantPage() {
   }
 
   async function handleSubmit() {
-    if (isSubmitting) {
+    if (isSubmitting || isLoadingRestaurant) {
       return;
     }
 
@@ -177,6 +247,36 @@ export default function AddRestaurantPage() {
     setIsSubmitting(true);
 
     try {
+      const businessHours = {
+        periods: periods.map(({ open, close }) => ({ open, close })),
+        closedDays,
+        openAllYear,
+        irregularHolidays,
+      };
+
+      if (isEdit && restaurantId) {
+        const input: UpdateRestaurantInput = {
+          name: name.trim(),
+          category: categoryLabel.trim(),
+          address: address.trim() || null,
+          phone: phone.trim() || null,
+          website: website.trim() || null,
+          note: notes.trim() || null,
+          googlePlaceId: googlePlaceId?.trim() || null,
+          businessHours,
+        };
+
+        await updateRestaurant(restaurantId, input);
+        showToast("success", "餐廳已更新！");
+
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, SUCCESS_TOAST_MS);
+        });
+
+        router.push(`/restaurants/${restaurantId}`);
+        return;
+      }
+
       const { data: group, error: groupError } = await getCurrentGroup();
 
       if (groupError) {
@@ -196,12 +296,7 @@ export default function AddRestaurantPage() {
         website: website.trim() || null,
         note: notes.trim() || null,
         googlePlaceId: googlePlaceId?.trim() || null,
-        businessHours: {
-          periods: periods.map(({ open, close }) => ({ open, close })),
-          closedDays,
-          openAllYear,
-          irregularHolidays,
-        },
+        businessHours,
       };
 
       await createRestaurant(input);
@@ -217,86 +312,121 @@ export default function AddRestaurantPage() {
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "新增失敗，請稍後再試";
+          : isEdit
+            ? "更新失敗，請稍後再試"
+            : "新增失敗，請稍後再試";
       showToast("error", message);
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  if (isEdit && loadError) {
+    return (
+      <div className="home-grid-bg min-h-full">
+        <AddRestaurantHeader title="編輯餐廳" />
+        <section className="flex flex-col items-center gap-3 px-5 pt-16 text-center">
+          <p className="text-sm font-medium text-cocoa">{loadError}</p>
+          <Link
+            href={restaurantId ? `/restaurants/${restaurantId}` : "/restaurants"}
+            className="rounded-full bg-caramel px-6 py-2.5 text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.98]"
+          >
+            返回餐廳詳情
+          </Link>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="home-grid-bg min-h-full">
-      <AddRestaurantHeader />
-      <AddRestaurantGoogleSearch
-        onSelectPlaceId={handleSelectPlaceId}
-        fillNotice={fillNotice}
-        detailLoading={detailLoading || isSubmitting}
-      />
-      <AddRestaurantFormCard
-        name={name}
-        onNameChange={setName}
-        categoryLabel={categoryLabel}
-        onCategoryChange={setCategoryLabel}
-        phone={phone}
-        onPhoneChange={setPhone}
-        website={website}
-        onWebsiteChange={setWebsite}
-        address={address}
-        onAddressChange={setAddress}
-        notes={notes}
-        onNotesChange={setNotes}
-        periods={periods}
-        onPeriodChange={(id, patch) => {
-          setPeriods((prev) =>
-            prev.map((period) =>
-              period.id === id ? { ...period, ...patch } : period,
-            ),
-          );
-        }}
-        onRemovePeriod={(id) => {
-          setPeriods((prev) => {
-            if (prev.length <= 1) {
-              return prev.map((period) =>
-                period.id === id
-                  ? { ...period, open: "", close: "" }
-                  : period,
+      <AddRestaurantHeader title={isEdit ? "編輯餐廳" : "新增餐廳"} />
+      {isLoadingRestaurant ? (
+        <div className="animate-pulse space-y-4 px-5 pt-4 pb-8" aria-hidden>
+          <div className="h-12 w-full rounded-2xl bg-border/80" />
+          <div className="h-72 w-full rounded-2xl bg-border/70" />
+        </div>
+      ) : (
+        <>
+          <AddRestaurantGoogleSearch
+            onSelectPlaceId={handleSelectPlaceId}
+            fillNotice={fillNotice}
+            detailLoading={detailLoading || isSubmitting}
+          />
+          <AddRestaurantFormCard
+            name={name}
+            onNameChange={setName}
+            categoryLabel={categoryLabel}
+            onCategoryChange={setCategoryLabel}
+            phone={phone}
+            onPhoneChange={setPhone}
+            website={website}
+            onWebsiteChange={setWebsite}
+            address={address}
+            onAddressChange={setAddress}
+            notes={notes}
+            onNotesChange={setNotes}
+            periods={periods}
+            onPeriodChange={(id, patch) => {
+              setPeriods((prev) =>
+                prev.map((period) =>
+                  period.id === id ? { ...period, ...patch } : period,
+                ),
               );
-            }
-            return prev.filter((period) => period.id !== id);
-          });
-        }}
-        onAddPeriod={() => {
-          setPeriods((prev) => {
-            if (prev.length >= MAX_BUSINESS_HOUR_PERIODS) {
-              return prev;
-            }
-            return [...prev, createEmptyPeriodRow()];
-          });
-        }}
-        closedDays={closedDays}
-        onToggleDay={(day) => {
-          setClosedDays((prev) =>
-            prev.includes(day)
-              ? prev.filter((item) => item !== day)
-              : [...prev, day],
-          );
-        }}
-        openAllYear={openAllYear}
-        onOpenAllYearChange={setOpenAllYear}
-        irregularHolidays={irregularHolidays}
-        onIrregularHolidaysChange={setIrregularHolidays}
-        googlePhotoName={googlePhotoName}
-        onClearGooglePhoto={() => setGooglePhotoName(null)}
-        specialHours={specialHours}
-        weeklyHours={weeklyHours}
+            }}
+            onRemovePeriod={(id) => {
+              setPeriods((prev) => {
+                if (prev.length <= 1) {
+                  return prev.map((period) =>
+                    period.id === id
+                      ? { ...period, open: "", close: "" }
+                      : period,
+                  );
+                }
+                return prev.filter((period) => period.id !== id);
+              });
+            }}
+            onAddPeriod={() => {
+              setPeriods((prev) => {
+                if (prev.length >= MAX_BUSINESS_HOUR_PERIODS) {
+                  return prev;
+                }
+                return [...prev, createEmptyPeriodRow()];
+              });
+            }}
+            closedDays={closedDays}
+            onToggleDay={(day) => {
+              setClosedDays((prev) =>
+                prev.includes(day)
+                  ? prev.filter((item) => item !== day)
+                  : [...prev, day],
+              );
+            }}
+            openAllYear={openAllYear}
+            onOpenAllYearChange={setOpenAllYear}
+            irregularHolidays={irregularHolidays}
+            onIrregularHolidaysChange={setIrregularHolidays}
+            googlePhotoName={googlePhotoName}
+            onClearGooglePhoto={() => setGooglePhotoName(null)}
+            specialHours={specialHours}
+            weeklyHours={weeklyHours}
+          />
+          <AddRestaurantFooter
+            onSubmit={() => {
+              void handleSubmit();
+            }}
+            isSubmitting={isSubmitting}
+            submitLabel={isEdit ? "儲存修改" : "儲存餐廳"}
+            submittingLabel={isEdit ? "儲存中..." : "新增中..."}
+          />
+        </>
+      )}
+      <input
+        type="hidden"
+        name="googlePlaceId"
+        value={googlePlaceId ?? ""}
+        readOnly
       />
-      <AddRestaurantFooter
-        onSubmit={() => {
-          void handleSubmit();
-        }}
-        isSubmitting={isSubmitting}
-      />
-      <input type="hidden" name="googlePlaceId" value={googlePlaceId ?? ""} readOnly />
 
       {toast ? (
         <div

@@ -1,14 +1,4 @@
-import type {
-  Restaurant,
-  RestaurantCategoryId,
-} from "@/src/lib/restaurant-types";
-import { categoryFilters } from "@/src/lib/restaurants-data";
-
-function getCategoryLabel(
-  category: Restaurant["category"],
-): string | undefined {
-  return categoryFilters.find((item) => item.id === category)?.label;
-}
+import type { Restaurant } from "@/src/lib/restaurant-types";
 
 export function filterRestaurantsBySearch(
   restaurants: Restaurant[],
@@ -21,12 +11,12 @@ export function filterRestaurantsBySearch(
   }
 
   return restaurants.filter((restaurant) => {
-    const categoryLabel = getCategoryLabel(restaurant.category) ?? "";
+    const categoryText = restaurant.category;
     const tagText = restaurant.tags.join(" ");
 
     return (
       restaurant.name.toLowerCase().includes(normalizedQuery) ||
-      categoryLabel.toLowerCase().includes(normalizedQuery) ||
+      categoryText.toLowerCase().includes(normalizedQuery) ||
       tagText.toLowerCase().includes(normalizedQuery)
     );
   });
@@ -34,7 +24,7 @@ export function filterRestaurantsBySearch(
 
 export function filterRestaurantsByCategory(
   restaurants: Restaurant[],
-  categoryId: RestaurantCategoryId,
+  categoryId: string,
 ): Restaurant[] {
   if (categoryId === "all") {
     return restaurants;
@@ -48,7 +38,7 @@ export function filterRestaurantsByCategory(
 export function getFilteredRestaurants(
   restaurants: Restaurant[],
   searchQuery: string,
-  categoryId: RestaurantCategoryId,
+  categoryId: string,
 ): Restaurant[] {
   const searchFiltered = filterRestaurantsBySearch(restaurants, searchQuery);
 

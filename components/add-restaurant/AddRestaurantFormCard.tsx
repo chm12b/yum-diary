@@ -243,8 +243,8 @@ export default function AddRestaurantFormCard({
 
         <FormDivider />
 
-        {/* Hours + closed days — slight bias to hours, keep closed days usable */}
-        <div className="grid grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-3 px-4 py-3.5">
+        {/* Hours + closed days — side by side */}
+        <div className="grid grid-cols-2 gap-3 px-4 py-3.5">
           <div className="min-w-0 space-y-2.5">
             <FieldLabel
               icon={Clock}

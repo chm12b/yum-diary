@@ -5,11 +5,15 @@ import { homeAssets } from "@/src/lib/home-assets";
 type AddRestaurantFooterProps = {
   onSubmit?: () => void;
   isSubmitting?: boolean;
+  submitLabel?: string;
+  submittingLabel?: string;
 };
 
 export default function AddRestaurantFooter({
   onSubmit,
   isSubmitting = false,
+  submitLabel = "儲存餐廳",
+  submittingLabel = "新增中...",
 }: AddRestaurantFooterProps) {
   return (
     <section className="space-y-3 px-5 pt-2 pb-8">
@@ -31,7 +35,7 @@ export default function AddRestaurantFooter({
           aria-hidden
           className="-mx-2.5 -my-[25px] h-20 w-20 object-contain"
         />
-        {isSubmitting ? "新增中..." : "儲存餐廳"}
+        {isSubmitting ? submittingLabel : submitLabel}
         <Image
           src={homeAssets.navFavorites}
           alt=""

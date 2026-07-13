@@ -1,6 +1,7 @@
 import type { AuthError, PostgrestError } from "@supabase/supabase-js";
 
-import { createClient } from "@/src/lib/supabase/client";
+import { getRestaurant as getRestaurantForGroup } from "@/src/services/restaurant/getRestaurant";
+import { listRestaurants as listRestaurantsForGroup } from "@/src/services/restaurant/listRestaurants";
 import type { Database } from "@/src/types/database";
 
 export type RestaurantResult<T> = {
@@ -13,58 +14,27 @@ export type RestaurantRow = Database["public"]["Tables"]["restaurants"]["Row"];
 export async function listRestaurants(): Promise<
   RestaurantResult<RestaurantRow[]>
 > {
-  const supabase = createClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError) {
-    return { data: [], error: userError };
+  try {
+    const data = await listRestaurantsForGroup();
+    return { data, error: null };
+  } catch (error) {
+    return {
+      data: [],
+      error: error as PostgrestError | AuthError,
+    };
   }
-
-  if (!user) {
-    return { data: [], error: null };
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("current_group_id")
-    .eq("id", user.id)
-    .single();
-
-  if (profileError) {
-    return { data: [], error: profileError };
-  }
-
-  if (!profile.current_group_id) {
-    return { data: [], error: null };
-  }
-
-  const { data, error } = await supabase
-    .from("restaurants")
-    .select("*")
-    .eq("group_id", profile.current_group_id)
-    .order("created_at", { ascending: false });
-
-  return { data: data ?? [], error };
 }
 
 export async function getRestaurant(
   restaurantId: string,
 ): Promise<RestaurantResult<RestaurantRow | null>> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from("restaurants")
-    .select("*")
-    .eq("id", restaurantId)
-    .single();
-
-  if (error) {
-    return { data: null, error };
+  try {
+    const data = await getRestaurantForGroup(restaurantId);
+    return { data, error: null };
+  } catch (error) {
+    return {
+      data: null,
+      error: error as PostgrestError | AuthError,
+    };
   }
-
-  return { data, error: null };
 }

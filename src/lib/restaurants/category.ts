@@ -18,6 +18,16 @@ export const APP_CATEGORIES = [
 
 export type AppCategory = (typeof APP_CATEGORIES)[number];
 
+/** Category chips for Restaurant List (`全部` + APP_CATEGORIES). */
+export const LIST_CATEGORY_FILTERS: Array<{ id: "all" | AppCategory; label: string }> =
+  [
+    { id: "all", label: "全部" },
+    ...APP_CATEGORIES.map((category) => ({
+      id: category,
+      label: category,
+    })),
+  ];
+
 const DEFAULT_CATEGORY: AppCategory = "其他";
 
 /**

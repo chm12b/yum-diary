@@ -7,7 +7,7 @@ export type RestaurantCategoryId =
   | "desserts";
 
 export type CategoryFilterItem = {
-  id: RestaurantCategoryId;
+  id: string;
   label: string;
 };
 
@@ -23,7 +23,8 @@ export type Restaurant = {
   priceMin: number;
   priceMax: number;
   tags: string[];
-  category: Exclude<RestaurantCategoryId, "all">;
+  /** App category label (e.g. 日式) or legacy mock id. */
+  category: string;
   isFavorite: boolean;
   googlePlaceId?: string;
   lastVisited?: string;

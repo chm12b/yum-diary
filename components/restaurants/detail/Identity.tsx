@@ -48,18 +48,7 @@ export default function Identity({ restaurant }: IdentityProps) {
         <div className="min-w-0 flex-1 space-y-1.5 pt-1">
           <div className="flex items-center gap-1.5">
             <h1 className="text-xl font-bold text-deep-brown">
-              {restaurant.websiteUrl ? (
-                <a
-                  href={restaurant.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:underline"
-                >
-                  {restaurant.name}
-                </a>
-              ) : (
-                restaurant.name
-              )}
+              {restaurant.name}
             </h1>
             <Image
               src={homeAssets.stickerFlowerPink}

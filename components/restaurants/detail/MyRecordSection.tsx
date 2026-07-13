@@ -22,10 +22,11 @@ function formatVisitDate(dateStr: string): string {
 }
 
 export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
-  const { lastVisited, lastOrder, notes, recordCount, images, imageUrl } =
+  const { lastVisited, lastOrder, recordCount, images, imageUrl, records } =
     restaurant;
   const thumbnailUrl = images[0]?.url ?? imageUrl;
-  const totalRecords = recordCount ?? 1;
+  const totalRecords = recordCount ?? records?.length ?? 0;
+  const notes = records?.[0]?.notes;
 
   return (
     <section className="px-5 pt-5 pb-4">
