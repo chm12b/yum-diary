@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { navItems } from "@/src/lib/nav-data";
+import { isHiddenNavPath } from "@/src/lib/shell";
 
 function FabPlusIcon() {
   return (
@@ -29,20 +30,24 @@ function isNavActive(pathname: string, href: string) {
 export default function BottomNav() {
   const pathname = usePathname();
 
+  if (isHiddenNavPath(pathname)) {
+    return null;
+  }
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 h-bottom-nav border-t border-border bg-rice-white/95">
       <div className="relative mx-auto flex h-full max-w-app items-end justify-around px-2 pb-2">
         {navItems.map((item) => {
           if (item.isFab) {
             return (
-              <button
+              <Link
                 key={item.id}
-                type="button"
+                href="/restaurants/new"
                 aria-label={item.label}
                 className="relative -top-5 flex h-14 w-14 shrink-0 translate-y-[5px] items-center justify-center gap-0 rounded-full border-2 border-border bg-sakura-pink shadow-pink-button transition-transform active:scale-[0.98]"
               >
                 <FabPlusIcon />
-              </button>
+              </Link>
             );
           }
 

@@ -1,6 +1,24 @@
-import { Bell, Menu } from "lucide-react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Bell, ChevronDown, Menu } from "lucide-react";
+
+import { getCurrentGroup } from "@/src/services/groups/group.service";
 
 export default function TopBar() {
+  const [groupName, setGroupName] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadCurrentGroup() {
+      const { data } = await getCurrentGroup();
+      setGroupName(data?.name ?? null);
+    }
+
+    void loadCurrentGroup();
+  }, []);
+
+  const label = groupName ?? "我的群組";
+
   return (
     <header className="grid grid-cols-3 items-center px-5 pt-4 pb-1">
       <button
@@ -10,9 +28,23 @@ export default function TopBar() {
       >
         <Menu className="h-6 w-6" strokeWidth={2} />
       </button>
-      <h1 className="text-center font-mono text-xl text-text-primary">
-        Yum Diary
-      </h1>
+
+      <button
+        type="button"
+        aria-label={`目前群組：${label}`}
+        className="flex max-w-full items-center justify-center gap-1 justify-self-center text-text-primary transition-transform active:scale-[0.98]"
+      >
+        <span aria-hidden className="text-base leading-none">
+          🏠
+        </span>
+        <span className="max-w-[9.5rem] truncate font-mono text-base">{label}</span>
+        <ChevronDown
+          className="h-4 w-4 shrink-0 text-text-secondary"
+          strokeWidth={2.5}
+          aria-hidden
+        />
+      </button>
+
       <button
         type="button"
         aria-label="通知"

@@ -1,12 +1,8 @@
-import {
-  ChevronRight,
-  Clock,
-  Copy,
-  MapPin,
-  Phone,
-} from "lucide-react";
+import { Clock, MapPin, Phone, CalendarOff } from "lucide-react";
+import Image from "next/image";
 
 import RestaurantInfoItem from "@/components/restaurants/detail/RestaurantInfoItem";
+import { homeAssets } from "@/src/lib/home-assets";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 
 type RestaurantInfoListProps = {
@@ -17,60 +13,62 @@ export default function RestaurantInfoList({
   restaurant,
 }: RestaurantInfoListProps) {
   const { openingHours, phoneNumber, address } = restaurant;
+  const closedDaysLabel =
+    openingHours.closedDays.length > 0
+      ? openingHours.closedDays.join("、")
+      : "無固定公休";
 
   return (
-    <section className="px-5 pt-4">
-      <div className="divide-y divide-warm-gray overflow-hidden rounded-2xl bg-rice-white">
-        <RestaurantInfoItem
-          icon={Clock}
-          title="營業時間"
-          value={openingHours.slots.join("\n")}
-          subtitle={openingHours.todayStatusLabel}
-          trailing={
-            <ChevronRight className="h-5 w-5 text-cocoa" strokeWidth={2} />
-          }
+    <section className="relative px-5 pt-4">
+      <div className="relative mb-3">
+        <div className="-mb-[3px] flex items-center gap-2">
+          <Image
+            src={homeAssets.storeInfo}
+            alt=""
+            width={40}
+            height={30}
+            aria-hidden
+            className="object-contain"
+            style={{ width: 40, height: 30 }}
+          />
+          <h2 className="text-base font-bold text-deep-brown">店家資訊</h2>
+        </div>
+        <Image
+          src={homeAssets.detailBunny}
+          alt=""
+          width={160}
+          height={160}
+          aria-hidden
+          className="pointer-events-none absolute -top-24 right-0 z-10 h-40 w-40 object-contain"
         />
-        {phoneNumber ? (
+      </div>
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-rice-white px-2 py-4 shadow-soft">
+        <div className="grid grid-cols-2 gap-y-5">
           <RestaurantInfoItem
-            icon={Phone}
-            title="電話"
-            value={phoneNumber}
-            trailing={
-              <button
-                type="button"
-                aria-label="撥打電話"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-cocoa"
-              >
-                <Phone className="h-4 w-4" strokeWidth={2} />
-              </button>
-            }
+            icon={Clock}
+            title="營業時間"
+            value={openingHours.slots.join("\n")}
           />
-        ) : null}
-        {address ? (
+          {address ? (
+            <RestaurantInfoItem icon={MapPin} title="地址" value={address} />
+          ) : null}
+          {phoneNumber ? (
+            <RestaurantInfoItem icon={Phone} title="電話" value={phoneNumber} />
+          ) : null}
           <RestaurantInfoItem
-            icon={MapPin}
-            title="地址"
-            value={address}
-            trailing={
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="複製地址"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-cocoa"
-                >
-                  <Copy className="h-4 w-4" strokeWidth={2} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="開啟地圖"
-                  className="flex h-9 w-9 items-center justify-center rounded-full text-cocoa"
-                >
-                  <MapPin className="h-4 w-4" strokeWidth={2} />
-                </button>
-              </div>
-            }
+            icon={CalendarOff}
+            title="公休日"
+            value={closedDaysLabel}
           />
-        ) : null}
+        </div>
+        <Image
+          src={homeAssets.stickerFlowerPink}
+          alt=""
+          width={24}
+          height={24}
+          aria-hidden
+          className="pointer-events-none absolute right-2 bottom-2 h-6 w-6 object-contain opacity-80"
+        />
       </div>
     </section>
   );
