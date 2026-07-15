@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import AddRestaurantBunnyHero from "@/components/add-restaurant/AddRestaurantBunnyHero";
 import AddRestaurantFooter from "@/components/add-restaurant/AddRestaurantFooter";
 import AddRestaurantFormCard from "@/components/add-restaurant/AddRestaurantFormCard";
 import AddRestaurantGoogleSearch from "@/components/add-restaurant/AddRestaurantGoogleSearch";
@@ -348,11 +349,17 @@ export default function AddRestaurantPage({
         </div>
       ) : (
         <>
-          <AddRestaurantGoogleSearch
-            onSelectPlaceId={handleSelectPlaceId}
-            fillNotice={fillNotice}
-            detailLoading={detailLoading || isSubmitting}
-          />
+          {!isEdit ? (
+            <AddRestaurantGoogleSearch
+              onSelectPlaceId={handleSelectPlaceId}
+              fillNotice={fillNotice}
+              detailLoading={detailLoading || isSubmitting}
+            />
+          ) : (
+            <section className="flex justify-end px-5 pt-1 pb-3">
+              <AddRestaurantBunnyHero />
+            </section>
+          )}
           <AddRestaurantFormCard
             name={name}
             onNameChange={setName}

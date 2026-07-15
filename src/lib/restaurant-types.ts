@@ -27,6 +27,8 @@ export type Restaurant = {
   category: string;
   isFavorite: boolean;
   googlePlaceId?: string;
+  /** ISO timestamptz from restaurants.last_google_sync_at */
+  lastGoogleSyncAt?: string | null;
   lastVisited?: string;
   notes?: string;
 };

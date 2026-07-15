@@ -1,23 +1,28 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 type RestaurantInfoItemProps = {
   icon: LucideIcon;
   title: string;
-  value: string;
+  children: ReactNode;
+  className?: string;
 };
 
 export default function RestaurantInfoItem({
   icon: Icon,
   title,
-  value,
+  children,
+  className = "",
 }: RestaurantInfoItemProps) {
   return (
-    <div className="flex flex-col items-center gap-1 px-2 text-center">
-      <Icon className="h-5 w-5 text-caramel" strokeWidth={2} />
-      <p className="text-xs font-medium text-deep-brown">{title}</p>
-      <p className="whitespace-pre-line text-xs leading-relaxed text-cocoa">
-        {value}
-      </p>
+    <div className={`min-w-0 ${className}`}>
+      <div className="flex items-center gap-1.5">
+        <Icon className="h-4 w-4 shrink-0 text-caramel" strokeWidth={2} />
+        <p className="text-xs font-medium text-deep-brown">{title}</p>
+      </div>
+      <div className="mt-1.5 text-xs leading-relaxed break-words text-cocoa">
+        {children}
+      </div>
     </div>
   );
 }

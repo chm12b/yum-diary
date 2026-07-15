@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import DetailActionBar from "@/components/restaurants/detail/DetailActionBar";
 import DetailHeader from "@/components/restaurants/detail/DetailHeader";
@@ -11,7 +11,12 @@ import MyRecordSection from "@/components/restaurants/detail/MyRecordSection";
 import RestaurantInfoList from "@/components/restaurants/detail/RestaurantInfoList";
 import { mapRestaurantRecordToDetail } from "@/src/lib/map-restaurant-detail";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
-import { getRestaurant } from "@/src/services/restaurant";
+import { listRestaurantRecords } from "@/src/services/record";
+import {
+  getRestaurant,
+  GoogleSyncNotFoundError,
+  syncRestaurantFromGoogle,
+} from "@/src/services/restaurant";
 
 type DetailPageProps = {
   restaurantId: string;
@@ -19,15 +24,47 @@ type DetailPageProps = {
 
 type LoadStatus = "loading" | "ready" | "not-found" | "error";
 
+type ToastState = {
+  type: "success" | "error";
+  message: string;
+} | null;
+
+const TOAST_MS = 1800;
+
 export default function DetailPage({ restaurantId }: DetailPageProps) {
   const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
   const [status, setStatus] = useState<LoadStatus>("loading");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [toast, setToast] = useState<ToastState>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current != null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  function showToast(type: "success" | "error", message: string) {
+    setToast({ type, message });
+    if (toastTimerRef.current != null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, TOAST_MS);
+  }
 
   async function loadRestaurant() {
     setStatus("loading");
 
     try {
-      const row = await getRestaurant(restaurantId);
+      const [row, diningRecords] = await Promise.all([
+        getRestaurant(restaurantId),
+        listRestaurantRecords(restaurantId),
+      ]);
 
       if (!row) {
         setRestaurant(null);
@@ -35,11 +72,40 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         return;
       }
 
-      setRestaurant(mapRestaurantRecordToDetail(row));
+      setRestaurant(mapRestaurantRecordToDetail(row, diningRecords));
       setStatus("ready");
     } catch {
       setRestaurant(null);
       setStatus("error");
+    }
+  }
+
+  async function handleSyncGoogle() {
+    if (isSyncing) {
+      return;
+    }
+
+    setIsSyncing(true);
+
+    try {
+      const [updated, diningRecords] = await Promise.all([
+        syncRestaurantFromGoogle(restaurantId),
+        listRestaurantRecords(restaurantId),
+      ]);
+      setRestaurant(mapRestaurantRecordToDetail(updated, diningRecords));
+      showToast("success", "✨ 已同步最新 Google 資料");
+    } catch (error) {
+      const isNotFound =
+        error instanceof GoogleSyncNotFoundError ||
+        (error instanceof Error && error.name === "GoogleSyncNotFoundError");
+
+      if (isNotFound) {
+        showToast("error", "找不到 Google 資料");
+      } else {
+        showToast("error", "同步失敗，請稍後再試");
+      }
+    } finally {
+      setIsSyncing(false);
     }
   }
 
@@ -108,12 +174,30 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       <DetailHeader
         isFavorite={restaurant.isFavorite}
         restaurantId={restaurant.id}
+        canSyncGoogle={Boolean(restaurant.googlePlaceId)}
+        isSyncing={isSyncing}
+        onSyncGoogle={() => {
+          void handleSyncGoogle();
+        }}
       />
       <Identity restaurant={restaurant} />
       <RestaurantInfoList restaurant={restaurant} />
       <MenuSection menuImages={restaurant.menuImages} alt={restaurant.name} />
       <MyRecordSection restaurant={restaurant} />
       <DetailActionBar isFavorite={restaurant.isFavorite} />
+
+      {toast ? (
+        <div
+          role="status"
+          className={`fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+1rem)] z-50 mx-auto w-[min(100%-2rem,28rem)] rounded-2xl px-4 py-3 text-center text-sm font-medium shadow-card ${
+            toast.type === "success"
+              ? "border border-caramel/30 bg-sakura-pink/80 text-deep-brown"
+              : "border border-border bg-rice-white text-cocoa"
+          }`}
+        >
+          {toast.message}
+        </div>
+      ) : null}
     </div>
   );
 }

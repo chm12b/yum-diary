@@ -9,7 +9,7 @@ export default function RecordsFab({ restaurantId }: RecordsFabProps) {
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto max-w-app">
       <div className="pointer-events-auto absolute right-5 bottom-[calc(var(--bottom-nav-height)+0.75rem)] flex flex-col items-center gap-1">
         <Link
-          href={`/records/${restaurantId}/new`}
+          href={`/restaurants/${restaurantId}/records/new`}
           aria-label="新增紀錄"
           className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-border bg-sakura-pink shadow-pink-button transition-transform active:scale-[0.98]"
         >

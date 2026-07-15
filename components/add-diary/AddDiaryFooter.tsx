@@ -2,12 +2,24 @@ import Image from "next/image";
 
 import { homeAssets } from "@/src/lib/home-assets";
 
-export default function AddDiaryFooter() {
+type AddDiaryFooterProps = {
+  disabled?: boolean;
+  isSubmitting?: boolean;
+  onSave: () => void;
+};
+
+export default function AddDiaryFooter({
+  disabled = false,
+  isSubmitting = false,
+  onSave,
+}: AddDiaryFooterProps) {
   return (
     <section className="space-y-3 px-5 pt-2 pb-8">
       <button
         type="button"
-        className="relative flex w-full items-center justify-center gap-2 rounded-full bg-caramel px-6 py-3.5 text-base font-bold text-rice-white shadow-button transition-transform active:scale-[0.98]"
+        disabled={disabled || isSubmitting}
+        onClick={onSave}
+        className="relative flex w-full items-center justify-center gap-2 rounded-full bg-caramel px-6 py-3.5 text-base font-bold text-rice-white shadow-button transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span
           aria-hidden
@@ -21,7 +33,7 @@ export default function AddDiaryFooter() {
           aria-hidden
           className="-mx-2.5 -my-[25px] h-20 w-20 object-contain"
         />
-        儲存日記
+        {isSubmitting ? "儲存中…" : "儲存日記"}
         <Image
           src={homeAssets.navFavorites}
           alt=""

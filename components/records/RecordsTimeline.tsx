@@ -6,6 +6,16 @@ type RecordsTimelineProps = {
 };
 
 export default function RecordsTimeline({ records }: RecordsTimelineProps) {
+  if (records.length === 0) {
+    return (
+      <section className="px-5 pb-28">
+        <p className="rounded-2xl border border-dashed border-border bg-rice-white/70 px-4 py-10 text-center text-sm text-cocoa/60">
+          尚未紀錄
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="px-5 pb-28">
       <div className="relative pl-7">
