@@ -1,3 +1,5 @@
+import type { PostgrestError } from "@supabase/supabase-js";
+
 import type { CreateRestaurantInput, Json } from "./types";
 
 export function requireTrimmed(
@@ -14,6 +16,24 @@ export function requireTrimmed(
 export function optionalText(value: string | null | undefined): string | null {
   const trimmed = value?.trim() ?? "";
   return trimmed ? trimmed : null;
+}
+
+/**
+ * True when a Postgres / PostgREST error is about one of the given columns not
+ * existing. Lets writes degrade gracefully when a later migration (e.g. 009 /
+ * 014) has not been applied to the database yet.
+ */
+export function isMissingColumnError(
+  error: PostgrestError | null,
+  columns: readonly string[],
+): boolean {
+  if (!error) {
+    return false;
+  }
+
+  const message =
+    `${error.message} ${error.details ?? ""} ${error.hint ?? ""}`.toLowerCase();
+  return columns.some((column) => message.includes(column.toLowerCase()));
 }
 
 export function normalizeBusinessHours(

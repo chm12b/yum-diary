@@ -10,7 +10,9 @@ import MenuSection from "@/components/restaurants/detail/MenuSection";
 import MyRecordSection from "@/components/restaurants/detail/MyRecordSection";
 import RestaurantInfoList from "@/components/restaurants/detail/RestaurantInfoList";
 import { mapRestaurantRecordToDetail } from "@/src/lib/map-restaurant-detail";
+import type { GeoPoint } from "@/src/lib/restaurants/distance";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
+import { getCurrentGroup } from "@/src/services/groups/group.service";
 import { listRestaurantRecords } from "@/src/services/record";
 import {
   getRestaurant,
@@ -37,6 +39,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const toastTimerRef = useRef<number | null>(null);
+  const referenceRef = useRef<GeoPoint | null>(null);
 
   useEffect(() => {
     return () => {
@@ -61,10 +64,18 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
     setStatus("loading");
 
     try {
-      const [row, diningRecords] = await Promise.all([
+      const [row, diningRecords, groupResult] = await Promise.all([
         getRestaurant(restaurantId),
         listRestaurantRecords(restaurantId),
+        getCurrentGroup(),
       ]);
+
+      referenceRef.current = groupResult.data
+        ? {
+            lat: groupResult.data.referenceLat,
+            lng: groupResult.data.referenceLng,
+          }
+        : null;
 
       if (!row) {
         setRestaurant(null);
@@ -72,7 +83,9 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         return;
       }
 
-      setRestaurant(mapRestaurantRecordToDetail(row, diningRecords));
+      setRestaurant(
+        mapRestaurantRecordToDetail(row, diningRecords, referenceRef.current),
+      );
       setStatus("ready");
     } catch {
       setRestaurant(null);
@@ -92,7 +105,13 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         syncRestaurantFromGoogle(restaurantId),
         listRestaurantRecords(restaurantId),
       ]);
-      setRestaurant(mapRestaurantRecordToDetail(updated, diningRecords));
+      setRestaurant(
+        mapRestaurantRecordToDetail(
+          updated,
+          diningRecords,
+          referenceRef.current,
+        ),
+      );
       showToast("success", "✨ 已同步最新 Google 資料");
     } catch (error) {
       const isNotFound =
@@ -182,7 +201,10 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       />
       <Identity restaurant={restaurant} />
       <RestaurantInfoList restaurant={restaurant} />
-      <MenuSection menuImages={restaurant.menuImages} alt={restaurant.name} />
+      <MenuSection
+        restaurantId={restaurant.id}
+        restaurantName={restaurant.name}
+      />
       <MyRecordSection restaurant={restaurant} />
       <DetailActionBar isFavorite={restaurant.isFavorite} />
 

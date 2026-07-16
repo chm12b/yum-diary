@@ -1,12 +1,18 @@
+import {
+  distanceMetersOrZero,
+  type GeoPoint,
+} from "@/src/lib/restaurants/distance";
+import { resolveOpenStatus } from "@/src/lib/restaurants/open-status";
 import type { Restaurant } from "@/src/lib/restaurant-types";
 import type { RestaurantRecord } from "@/src/services/restaurant";
 
 /**
  * Map a DB restaurant row to the existing list Card model.
- * Fields not yet backed by List data use safe defaults (Card UI unchanged).
+ * Distance is computed against the current group's reference point.
  */
 export function mapRestaurantRecordToListItem(
   row: RestaurantRecord,
+  reference: GeoPoint | null = null,
 ): Restaurant {
   const priceMin = row.price_min ?? 0;
   const priceMax = row.price_max ?? priceMin;
@@ -15,10 +21,15 @@ export function mapRestaurantRecordToListItem(
     id: row.id,
     name: row.name,
     imageUrl: "/restaurants/placeholder.svg",
-    rating: 0,
-    reviewCount: 0,
+    rating: row.google_rating ?? 0,
+    reviewCount: row.google_rating_count ?? 0,
+    priceLevel: row.price_level ?? null,
     isOpen: false,
-    distanceMeters: 0,
+    openStatus: resolveOpenStatus(row.business_hours),
+    distanceMeters: distanceMetersOrZero(
+      { lat: row.latitude, lng: row.longitude },
+      reference,
+    ),
     averagePrice:
       priceMin > 0 && priceMax > 0
         ? Math.round((priceMin + priceMax) / 2)

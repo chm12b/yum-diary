@@ -1,9 +1,11 @@
 import { Heart, MapPin } from "lucide-react";
 import Image from "next/image";
 
-import OpenStatusBadge from "@/components/restaurants/OpenStatusBadge";
 import StarRating from "@/components/restaurants/StarRating";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { homeAssets } from "@/src/lib/home-assets";
+import { formatDistance } from "@/src/lib/restaurants/distance";
+import { resolvePriceLabel } from "@/src/lib/restaurants/price-level";
 import type { Restaurant } from "@/src/lib/restaurant-types";
 
 type RestaurantCardProps = {
@@ -11,22 +13,14 @@ type RestaurantCardProps = {
   onClick?: () => void;
 };
 
-function formatDistance(distanceMeters: number): string {
-  if (distanceMeters >= 1000) {
-    return `${(distanceMeters / 1000).toFixed(1)}km`;
-  }
-
-  return `${distanceMeters}m`;
-}
-
-function formatPriceRange(priceMin: number, priceMax: number): string {
-  return `$${priceMin}-${priceMax}`;
-}
-
 export default function RestaurantCard({
   restaurant,
   onClick,
 }: RestaurantCardProps) {
+  const hasRating = restaurant.rating > 0;
+  const hasDistance = restaurant.distanceMeters > 0;
+  const priceLabel = resolvePriceLabel(restaurant);
+
   return (
     <button
       type="button"
@@ -56,20 +50,26 @@ export default function RestaurantCard({
 
       <div className="flex min-h-[100px] min-w-0 flex-1 flex-col gap-1.5 pb-7 pr-6">
         <h2 className="truncate font-bold text-deep-brown">{restaurant.name}</h2>
-        <StarRating
-          rating={restaurant.rating}
-          reviewCount={restaurant.reviewCount}
-        />
+        {hasRating ? (
+          <StarRating
+            rating={restaurant.rating}
+            reviewCount={restaurant.reviewCount}
+          />
+        ) : null}
         <p className="truncate text-xs text-cocoa">
           {restaurant.tags.join(" · ")}
         </p>
-        <div className="flex items-center gap-3 text-xs text-cocoa">
-          <span className="flex items-center gap-0.5">
-            <MapPin className="h-3 w-3 shrink-0" strokeWidth={2} />
-            {formatDistance(restaurant.distanceMeters)}
-          </span>
-          <span>{formatPriceRange(restaurant.priceMin, restaurant.priceMax)}</span>
-        </div>
+        {hasDistance || priceLabel ? (
+          <div className="flex items-center gap-3 text-xs text-cocoa">
+            {hasDistance ? (
+              <span className="flex items-center gap-0.5">
+                <MapPin className="h-3 w-3 shrink-0" strokeWidth={2} />
+                {formatDistance(restaurant.distanceMeters)}
+              </span>
+            ) : null}
+            {priceLabel ? <span>{priceLabel}</span> : null}
+          </div>
+        ) : null}
       </div>
 
       <Heart
@@ -81,8 +81,8 @@ export default function RestaurantCard({
         strokeWidth={2}
       />
 
-      <OpenStatusBadge
-        isOpen={restaurant.isOpen}
+      <StatusBadge
+        status={restaurant.openStatus ?? "unknown"}
         className="absolute right-3 bottom-3"
       />
     </button>

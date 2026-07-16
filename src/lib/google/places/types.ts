@@ -53,12 +53,34 @@ export type PlaceDetailItem = {
   weeklyHours: WeeklyHoursRow[] | null;
   /** Google photo resource name only — download/Storage comes later. */
   photo: string | null;
+  /** Google average rating (0–5), or null when unavailable. */
+  rating: number | null;
+  /** Google total rating count, or null when unavailable. */
+  reviewCount: number | null;
+  /** Normalized price level 0–4 ($ – $$$$$), or null when unavailable. */
+  priceLevel: number | null;
+  /** Per-person price range lower bound (integer amount), or null. */
+  priceMin: number | null;
+  /** Per-person price range upper bound (integer amount), or null (open-ended). */
+  priceMax: number | null;
 };
 
 export type GooglePlacePhoto = {
   name?: string;
   widthPx?: number;
   heightPx?: number;
+};
+
+/** Places API (New) Money — `units` is an int64 encoded as a string. */
+export type GoogleMoney = {
+  currencyCode?: string;
+  units?: string;
+  nanos?: number;
+};
+
+export type GooglePriceRange = {
+  startPrice?: GoogleMoney;
+  endPrice?: GoogleMoney;
 };
 
 export type GoogleOpeningHoursPeriodPoint = {
@@ -95,6 +117,10 @@ export type GooglePlace = {
   };
   rating?: number;
   userRatingCount?: number;
+  /** Places API (New) enum, e.g. "PRICE_LEVEL_MODERATE". */
+  priceLevel?: string;
+  /** Per-person price range (Place Details Enterprise SKU). */
+  priceRange?: GooglePriceRange;
   regularOpeningHours?: GoogleRegularOpeningHours;
   photos?: GooglePlacePhoto[];
 };

@@ -1,3 +1,5 @@
+import type { RestaurantOpenStatus } from "@/src/lib/restaurants/open-status";
+
 export type RestaurantCategoryId =
   | "all"
   | "japanese"
@@ -17,7 +19,11 @@ export type Restaurant = {
   imageUrl: string;
   rating: number;
   reviewCount: number;
+  /** Google price level 0–4 ($ – $$$$$); null / undefined when unavailable. */
+  priceLevel?: number | null;
   isOpen: boolean;
+  /** Derived display status for the open-status badge. */
+  openStatus?: RestaurantOpenStatus;
   distanceMeters: number;
   averagePrice: number;
   priceMin: number;

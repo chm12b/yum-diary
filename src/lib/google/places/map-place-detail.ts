@@ -1,6 +1,7 @@
 import type {
   BusinessHours,
   BusinessHoursPeriod,
+  GoogleMoney,
   GoogleOpeningHoursPeriod,
   GooglePlace,
   GoogleRegularOpeningHours,
@@ -241,6 +242,34 @@ export function mapRegularOpeningHours(
   };
 }
 
+/** Places API (New) priceLevel enum → integer 0–4 (null when unspecified). */
+const GOOGLE_PRICE_LEVEL: Record<string, number> = {
+  PRICE_LEVEL_FREE: 0,
+  PRICE_LEVEL_INEXPENSIVE: 1,
+  PRICE_LEVEL_MODERATE: 2,
+  PRICE_LEVEL_EXPENSIVE: 3,
+  PRICE_LEVEL_VERY_EXPENSIVE: 4,
+};
+
+export function mapGooglePriceLevel(
+  value: string | undefined,
+): number | null {
+  if (!value) {
+    return null;
+  }
+  return GOOGLE_PRICE_LEVEL[value] ?? null;
+}
+
+/** Money.units is an int64 encoded as a string — parse to an integer amount. */
+function parseMoneyUnits(money: GoogleMoney | undefined): number | null {
+  const raw = money?.units;
+  if (raw == null) {
+    return null;
+  }
+  const value = Number.parseInt(String(raw), 10);
+  return Number.isFinite(value) ? value : null;
+}
+
 export function mapGooglePlaceToDetailItem(
   place: GooglePlace,
 ): PlaceDetailItem | null {
@@ -263,6 +292,12 @@ export function mapGooglePlaceToDetailItem(
     specialHours: mapped?.specialHours ?? false,
     weeklyHours: mapped?.weeklyHours ?? null,
     photo: place.photos?.[0]?.name ?? null,
+    rating: typeof place.rating === "number" ? place.rating : null,
+    reviewCount:
+      typeof place.userRatingCount === "number" ? place.userRatingCount : null,
+    priceLevel: mapGooglePriceLevel(place.priceLevel),
+    priceMin: parseMoneyUnits(place.priceRange?.startPrice),
+    priceMax: parseMoneyUnits(place.priceRange?.endPrice),
   };
 }
 

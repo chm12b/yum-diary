@@ -18,8 +18,6 @@ export const homeAssets = {
   memoHeart: "/home/memo-heart.png",
   titleAllRestaurants: "/home/title-all-restaurants.png",
   searchBunny: "/home/searh-bunny.png",
-  restaurantOpen: "/home/restaurant-open.png",
-  restaurantClose: "/home/restaurant-close.png",
   navHome: "/home/nav-home.png",
   navRestaurants: "/home/nav-restaurants.png",
   navFavorites: "/home/nav-favorites.png",

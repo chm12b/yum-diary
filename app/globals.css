@@ -20,6 +20,16 @@
   --text-secondary: #a68d7b;
   --border: #e6d8c7;
 
+  /* Open status badge (warm-tone pastels) */
+  --status-open-bg: #e6f0e1;
+  --status-open-fg: #5f8a56;
+  --status-closed-bg: #f7e0dc;
+  --status-closed-fg: #b25f59;
+  --status-holiday-bg: #f8e6cd;
+  --status-holiday-fg: #b9792f;
+  --status-unknown-bg: #ece6de;
+  --status-unknown-fg: #9d8d7c;
+
   /* Layout */
   --app-max-width: 28rem;
   --bottom-nav-height: 5.625rem;
@@ -45,6 +55,15 @@
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-border: var(--border);
+
+  --color-status-open-bg: var(--status-open-bg);
+  --color-status-open-fg: var(--status-open-fg);
+  --color-status-closed-bg: var(--status-closed-bg);
+  --color-status-closed-fg: var(--status-closed-fg);
+  --color-status-holiday-bg: var(--status-holiday-bg);
+  --color-status-holiday-fg: var(--status-holiday-fg);
+  --color-status-unknown-bg: var(--status-unknown-bg);
+  --color-status-unknown-fg: var(--status-unknown-fg);
 
   --spacing-bottom-nav: var(--bottom-nav-height);
   --container-app: var(--app-max-width);

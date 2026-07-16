@@ -1,7 +1,11 @@
+import { MapPin } from "lucide-react";
 import Image from "next/image";
 
 import StarRating from "@/components/restaurants/StarRating";
+import StatusBadge from "@/components/shared/StatusBadge";
 import { homeAssets } from "@/src/lib/home-assets";
+import { formatDistance } from "@/src/lib/restaurants/distance";
+import { resolvePriceLabel } from "@/src/lib/restaurants/price-level";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 
 type IdentityProps = {
@@ -11,6 +15,8 @@ type IdentityProps = {
 export default function Identity({ restaurant }: IdentityProps) {
   const imageUrl =
     restaurant.images[0]?.url ?? restaurant.imageUrl;
+  const hasDistance = restaurant.distanceMeters > 0;
+  const priceLabel = resolvePriceLabel(restaurant);
 
   return (
     <section className="px-5 pt-1 pb-2">
@@ -59,20 +65,32 @@ export default function Identity({ restaurant }: IdentityProps) {
               className="h-[18px] w-[18px] shrink-0 object-contain"
             />
           </div>
-          <StarRating
-            rating={restaurant.rating}
-            reviewCount={restaurant.reviewCount}
-          />
-          <p className="text-xs text-cocoa">{restaurant.tags.join(" · ")}</p>
-          <span
-            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              restaurant.isOpen
-                ? "bg-[#e8f5e9] text-[#5a9e5c]"
-                : "bg-soft-gray text-cocoa"
-            }`}
-          >
-            {restaurant.isOpen ? "營業中" : "已打烊"}
-          </span>
+          {restaurant.rating > 0 ? (
+            <StarRating
+              rating={restaurant.rating}
+              reviewCount={restaurant.reviewCount}
+            />
+          ) : null}
+          <div className="flex items-center gap-2">
+            <p className="min-w-0 truncate text-xs text-cocoa">
+              {restaurant.tags.join(" · ")}
+            </p>
+            <StatusBadge
+              status={restaurant.openStatus ?? "unknown"}
+              className="shrink-0"
+            />
+          </div>
+          {hasDistance || priceLabel ? (
+            <div className="flex items-center gap-3 text-xs text-cocoa">
+              {hasDistance ? (
+                <span className="flex items-center gap-0.5">
+                  <MapPin className="h-3 w-3 shrink-0" strokeWidth={2} />
+                  {formatDistance(restaurant.distanceMeters)}
+                </span>
+              ) : null}
+              {priceLabel ? <span>{priceLabel}</span> : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </section>

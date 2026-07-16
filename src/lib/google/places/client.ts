@@ -26,6 +26,10 @@ export const PLACE_DETAILS_FIELD_MASK = [
   "photos",
   "location",
   "primaryType",
+  "rating",
+  "userRatingCount",
+  "priceLevel",
+  "priceRange",
 ].join(",");
 
 export function getGoogleMapsApiKey(): string | null {

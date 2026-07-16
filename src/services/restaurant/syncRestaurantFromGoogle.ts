@@ -1,10 +1,10 @@
 import type { PlaceDetailItem, PlacesApiResponse } from "@/src/lib/google/places/types";
 import { createClient } from "@/src/lib/supabase/client";
-import type { PostgrestError } from "@supabase/supabase-js";
 
 import { getRestaurant } from "./getRestaurant";
 import type { RestaurantRecord } from "./types";
 import {
+  isMissingColumnError,
   normalizeBusinessHours,
   optionalText,
   requireTrimmed,
@@ -17,14 +17,13 @@ export class GoogleSyncNotFoundError extends Error {
   }
 }
 
-function isMissingPhotoColumnError(error: PostgrestError | null): boolean {
-  if (!error) {
-    return false;
-  }
-
-  const message = `${error.message} ${error.details ?? ""} ${error.hint ?? ""}`;
-  return message.toLowerCase().includes("google_photo_reference");
-}
+/** Columns added by later migrations (009 photo, 014 metadata) — may be absent. */
+const OPTIONAL_SYNC_COLUMNS = [
+  "google_photo_reference",
+  "google_rating",
+  "google_rating_count",
+  "price_level",
+] as const;
 
 /**
  * Re-sync restaurant contact / hours fields from Google Place Details.
@@ -98,33 +97,41 @@ export async function syncRestaurantFromGoogle(
     throw new GoogleSyncNotFoundError();
   }
 
-  const baseUpdate = {
+  const coreUpdate = {
     phone: optionalText(detail.phone),
     address: optionalText(detail.address),
     website_url: optionalText(detail.website),
     business_hours: normalizeBusinessHours(detail.businessHours),
+    latitude: detail.latitude ?? null,
+    longitude: detail.longitude ?? null,
+    price_min: detail.priceMin ?? null,
+    price_max: detail.priceMax ?? null,
     last_google_sync_at: now,
     updated_at: now,
   };
 
-  const withPhotoUpdate = {
-    ...baseUpdate,
+  // Optional columns depend on migrations 009 / 014 being applied.
+  const fullUpdate = {
+    ...coreUpdate,
     google_photo_reference: photoReference,
+    google_rating: detail.rating ?? null,
+    google_rating_count: detail.reviewCount ?? null,
+    price_level: detail.priceLevel ?? null,
   };
 
   let { data, error } = await supabase
     .from("restaurants")
-    .update(withPhotoUpdate)
+    .update(fullUpdate)
     .eq("id", restaurantId)
     .eq("group_id", profile.current_group_id)
     .select("*")
     .maybeSingle();
 
-  // Migration 009 may not be applied yet — still sync the core Google fields.
-  if (error && isMissingPhotoColumnError(error)) {
+  // A later migration may not be applied yet — still sync the core Google fields.
+  if (error && isMissingColumnError(error, OPTIONAL_SYNC_COLUMNS)) {
     const retry = await supabase
       .from("restaurants")
-      .update(baseUpdate)
+      .update(coreUpdate)
       .eq("id", restaurantId)
       .eq("group_id", profile.current_group_id)
       .select("*")

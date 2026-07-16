@@ -6,9 +6,13 @@ import { useEffect, useRef, useState } from "react";
 
 import AddRestaurantBunnyHero from "@/components/add-restaurant/AddRestaurantBunnyHero";
 import AddRestaurantFooter from "@/components/add-restaurant/AddRestaurantFooter";
-import AddRestaurantFormCard from "@/components/add-restaurant/AddRestaurantFormCard";
+import AddRestaurantFormCard, {
+  FormDivider,
+} from "@/components/add-restaurant/AddRestaurantFormCard";
 import AddRestaurantGoogleSearch from "@/components/add-restaurant/AddRestaurantGoogleSearch";
 import AddRestaurantHeader from "@/components/add-restaurant/AddRestaurantHeader";
+import MenuManagerSection from "@/components/add-restaurant/MenuManagerSection";
+import RestaurantNotesCard from "@/components/add-restaurant/RestaurantNotesCard";
 import type {
   BusinessHoursPeriodRow,
   PlaceDetailItem,
@@ -67,6 +71,15 @@ export default function AddRestaurantPage({
   const [irregularHolidays, setIrregularHolidays] = useState(false);
   const [googlePhotoName, setGooglePhotoName] = useState<string | null>(null);
   const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
+  const [googleRating, setGoogleRating] = useState<number | null>(null);
+  const [googleRatingCount, setGoogleRatingCount] = useState<number | null>(
+    null,
+  );
+  const [priceLevel, setPriceLevel] = useState<number | null>(null);
+  const [priceMin, setPriceMin] = useState<number | null>(null);
+  const [priceMax, setPriceMax] = useState<number | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [specialHours, setSpecialHours] = useState(false);
   const [weeklyHours, setWeeklyHours] = useState<WeeklyHoursRow[] | null>(null);
 
@@ -179,6 +192,15 @@ export default function AddRestaurantPage({
 
   function applyGoogleDetail(detail: PlaceDetailItem) {
     setGooglePlaceId(detail.id);
+
+    // Google metadata is not user-editable — always take the selected place's values.
+    setGoogleRating(detail.rating);
+    setGoogleRatingCount(detail.reviewCount);
+    setPriceLevel(detail.priceLevel);
+    setPriceMin(detail.priceMin);
+    setPriceMax(detail.priceMax);
+    setLatitude(detail.latitude);
+    setLongitude(detail.longitude);
 
     // Only fill blank fields — never overwrite user input.
     setName((prev) => (isBlank(prev) && detail.name ? detail.name : prev));
@@ -297,6 +319,13 @@ export default function AddRestaurantPage({
         website: website.trim() || null,
         note: notes.trim() || null,
         googlePlaceId: googlePlaceId?.trim() || null,
+        googleRating,
+        googleRatingCount,
+        priceLevel,
+        priceMin,
+        priceMax,
+        latitude,
+        longitude,
         businessHours,
       };
 
@@ -360,64 +389,78 @@ export default function AddRestaurantPage({
               <AddRestaurantBunnyHero />
             </section>
           )}
-          <AddRestaurantFormCard
-            name={name}
-            onNameChange={setName}
-            categoryLabel={categoryLabel}
-            onCategoryChange={setCategoryLabel}
-            phone={phone}
-            onPhoneChange={setPhone}
-            website={website}
-            onWebsiteChange={setWebsite}
-            address={address}
-            onAddressChange={setAddress}
-            notes={notes}
-            onNotesChange={setNotes}
-            periods={periods}
-            onPeriodChange={(id, patch) => {
-              setPeriods((prev) =>
-                prev.map((period) =>
-                  period.id === id ? { ...period, ...patch } : period,
-                ),
-              );
-            }}
-            onRemovePeriod={(id) => {
-              setPeriods((prev) => {
-                if (prev.length <= 1) {
-                  return prev.map((period) =>
-                    period.id === id
-                      ? { ...period, open: "", close: "" }
-                      : period,
+          <section className="px-5 pb-4">
+            <div className="overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
+              <AddRestaurantFormCard
+                name={name}
+                onNameChange={setName}
+                categoryLabel={categoryLabel}
+                onCategoryChange={setCategoryLabel}
+                phone={phone}
+                onPhoneChange={setPhone}
+                website={website}
+                onWebsiteChange={setWebsite}
+                address={address}
+                onAddressChange={setAddress}
+                periods={periods}
+                onPeriodChange={(id, patch) => {
+                  setPeriods((prev) =>
+                    prev.map((period) =>
+                      period.id === id ? { ...period, ...patch } : period,
+                    ),
                   );
-                }
-                return prev.filter((period) => period.id !== id);
-              });
-            }}
-            onAddPeriod={() => {
-              setPeriods((prev) => {
-                if (prev.length >= MAX_BUSINESS_HOUR_PERIODS) {
-                  return prev;
-                }
-                return [...prev, createEmptyPeriodRow()];
-              });
-            }}
-            closedDays={closedDays}
-            onToggleDay={(day) => {
-              setClosedDays((prev) =>
-                prev.includes(day)
-                  ? prev.filter((item) => item !== day)
-                  : [...prev, day],
-              );
-            }}
-            openAllYear={openAllYear}
-            onOpenAllYearChange={setOpenAllYear}
-            irregularHolidays={irregularHolidays}
-            onIrregularHolidaysChange={setIrregularHolidays}
-            googlePhotoName={googlePhotoName}
-            onClearGooglePhoto={() => setGooglePhotoName(null)}
-            specialHours={specialHours}
-            weeklyHours={weeklyHours}
-          />
+                }}
+                onRemovePeriod={(id) => {
+                  setPeriods((prev) => {
+                    if (prev.length <= 1) {
+                      return prev.map((period) =>
+                        period.id === id
+                          ? { ...period, open: "", close: "" }
+                          : period,
+                      );
+                    }
+                    return prev.filter((period) => period.id !== id);
+                  });
+                }}
+                onAddPeriod={() => {
+                  setPeriods((prev) => {
+                    if (prev.length >= MAX_BUSINESS_HOUR_PERIODS) {
+                      return prev;
+                    }
+                    return [...prev, createEmptyPeriodRow()];
+                  });
+                }}
+                closedDays={closedDays}
+                onToggleDay={(day) => {
+                  setClosedDays((prev) =>
+                    prev.includes(day)
+                      ? prev.filter((item) => item !== day)
+                      : [...prev, day],
+                  );
+                }}
+                openAllYear={openAllYear}
+                onOpenAllYearChange={setOpenAllYear}
+                irregularHolidays={irregularHolidays}
+                onIrregularHolidaysChange={setIrregularHolidays}
+                googlePhotoName={googlePhotoName}
+                onClearGooglePhoto={() => setGooglePhotoName(null)}
+                specialHours={specialHours}
+                weeklyHours={weeklyHours}
+              />
+              {isEdit && restaurantId ? (
+                <>
+                  <FormDivider />
+                  <MenuManagerSection
+                    restaurantId={restaurantId}
+                    restaurantName={name}
+                    onToast={showToast}
+                  />
+                </>
+              ) : null}
+              <FormDivider />
+              <RestaurantNotesCard notes={notes} onNotesChange={setNotes} />
+            </div>
+          </section>
           <AddRestaurantFooter
             onSubmit={() => {
               void handleSubmit();

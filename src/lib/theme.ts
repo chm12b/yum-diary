@@ -12,6 +12,14 @@ export const colors = {
   textPrimary: "#6D5240",
   textSecondary: "#A68D7B",
   border: "#E6D8C7",
+  statusOpenBg: "#E6F0E1",
+  statusOpenFg: "#5F8A56",
+  statusClosedBg: "#F7E0DC",
+  statusClosedFg: "#B25F59",
+  statusHolidayBg: "#F8E6CD",
+  statusHolidayFg: "#B9792F",
+  statusUnknownBg: "#ECE6DE",
+  statusUnknownFg: "#9D8D7C",
 } as const;
 
 export const shadows = {

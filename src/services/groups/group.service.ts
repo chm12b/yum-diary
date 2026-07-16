@@ -18,6 +18,9 @@ export type CurrentGroup = {
   id: string;
   name: string;
   inviteCode: string;
+  referenceName: string;
+  referenceLat: number;
+  referenceLng: number;
 };
 
 export async function createGroup({
@@ -68,7 +71,7 @@ export async function getCurrentGroup(): Promise<
 
   const { data: group, error: groupError } = await supabase
     .from("groups")
-    .select("id, name, invite_code")
+    .select("id, name, invite_code, reference_name, reference_lat, reference_lng")
     .eq("id", profile.current_group_id)
     .single();
 
@@ -81,6 +84,9 @@ export async function getCurrentGroup(): Promise<
       id: group.id,
       name: group.name,
       inviteCode: group.invite_code,
+      referenceName: group.reference_name,
+      referenceLat: group.reference_lat,
+      referenceLng: group.reference_lng,
     },
     error: null,
   };

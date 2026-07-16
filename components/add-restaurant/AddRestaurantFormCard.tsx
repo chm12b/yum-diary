@@ -1,14 +1,12 @@
 "use client";
 
 import {
-  BookOpen,
   CalendarOff,
   Camera,
   ChevronDown,
   Clock,
   Globe,
   MapPin,
-  MessageCircle,
   Minus,
   Phone,
   Plus,
@@ -26,11 +24,9 @@ import type {
 import { MAX_BUSINESS_HOUR_PERIODS } from "@/src/lib/restaurants/business-hours";
 import { APP_CATEGORIES } from "@/src/lib/restaurants/category";
 
-const NOTES_MAX = 200;
-
 export const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"] as const;
 
-function FormDivider() {
+export function FormDivider() {
   return <div className="border-t border-dashed border-border" />;
 }
 
@@ -91,8 +87,6 @@ export type AddRestaurantFormCardProps = {
   onWebsiteChange: (value: string) => void;
   address: string;
   onAddressChange: (value: string) => void;
-  notes: string;
-  onNotesChange: (value: string) => void;
   periods: BusinessHoursPeriodRow[];
   onPeriodChange: (
     id: string,
@@ -124,8 +118,6 @@ export default function AddRestaurantFormCard({
   onWebsiteChange,
   address,
   onAddressChange,
-  notes,
-  onNotesChange,
   periods,
   onPeriodChange,
   onRemovePeriod,
@@ -150,9 +142,8 @@ export default function AddRestaurantFormCard({
   const canAddPeriod = periods.length < MAX_BUSINESS_HOUR_PERIODS;
 
   return (
-    <section className="px-5 pb-4">
-      <div className="overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
-        {/* Store photo */}
+    <>
+      {/* Store photo */}
         <div className="space-y-3 px-4 py-3.5">
           <FieldLabel icon={Camera} label="店家照片" optional />
           {photoPreviewUrl ? (
@@ -239,6 +230,48 @@ export default function AddRestaurantFormCard({
               ))}
             </select>
           </button>
+        </div>
+
+        <FormDivider />
+
+        {/* Address */}
+        <div className="space-y-2.5 px-4 py-3.5">
+          <FieldLabel icon={MapPin} label="地址" optional />
+          <input
+            type="text"
+            value={address}
+            onChange={(event) => onAddressChange(event.target.value)}
+            placeholder="請輸入地址"
+            className={inputClass}
+          />
+        </div>
+
+        <FormDivider />
+
+        {/* Phone */}
+        <div className="space-y-2.5 px-4 py-3.5">
+          <FieldLabel icon={Phone} label="電話" optional />
+          <input
+            type="tel"
+            value={phone}
+            onChange={(event) => onPhoneChange(event.target.value)}
+            placeholder="請輸入電話號碼"
+            className={inputClass}
+          />
+        </div>
+
+        <FormDivider />
+
+        {/* Website */}
+        <div className="space-y-2.5 px-4 py-3.5">
+          <FieldLabel icon={Globe} label="官方網站" optional />
+          <input
+            type="url"
+            value={website}
+            onChange={(event) => onWebsiteChange(event.target.value)}
+            placeholder="https://"
+            className={inputClass}
+          />
         </div>
 
         <FormDivider />
@@ -349,99 +382,6 @@ export default function AddRestaurantFormCard({
           </div>
         </div>
 
-        <FormDivider />
-
-        {/* Phone */}
-        <div className="space-y-2.5 px-4 py-3.5">
-          <FieldLabel icon={Phone} label="電話" optional />
-          <input
-            type="tel"
-            value={phone}
-            onChange={(event) => onPhoneChange(event.target.value)}
-            placeholder="請輸入電話號碼"
-            className={inputClass}
-          />
-        </div>
-
-        <FormDivider />
-
-        {/* Website */}
-        <div className="space-y-2.5 px-4 py-3.5">
-          <FieldLabel icon={Globe} label="Website" optional />
-          <input
-            type="url"
-            value={website}
-            onChange={(event) => onWebsiteChange(event.target.value)}
-            placeholder="https://"
-            className={inputClass}
-          />
-        </div>
-
-        <FormDivider />
-
-        {/* Address */}
-        <div className="space-y-2.5 px-4 py-3.5">
-          <FieldLabel icon={MapPin} label="地址" optional />
-          <input
-            type="text"
-            value={address}
-            onChange={(event) => onAddressChange(event.target.value)}
-            placeholder="請輸入地址"
-            className={inputClass}
-          />
-        </div>
-
-        <FormDivider />
-
-        {/* Menu photos — never autofilled */}
-        <div className="space-y-3 px-4 py-3.5">
-          <FieldLabel
-            icon={BookOpen}
-            label="菜單"
-            optional
-            hint="可上傳多張菜單照片"
-          />
-          <div className="grid grid-cols-4 gap-2">
-            <button
-              type="button"
-              aria-label="上傳菜單照片"
-              className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-caramel/50 bg-cream-bg/40 text-cocoa transition-colors hover:bg-cream-bg"
-            >
-              <Plus className="h-5 w-5" strokeWidth={2} />
-              <span className="text-[10px]">上傳照片</span>
-            </button>
-            {Array.from({ length: 3 }, (_, index) => (
-              <div
-                key={index}
-                aria-hidden
-                className="aspect-square rounded-xl border border-border bg-cream-bg/30"
-              />
-            ))}
-          </div>
-        </div>
-
-        <FormDivider />
-
-        {/* Notes — never autofilled */}
-        <div className="space-y-2.5 px-4 py-3.5 pb-4">
-          <FieldLabel icon={MessageCircle} label="備註" optional />
-          <div className="relative">
-            <textarea
-              value={notes}
-              onChange={(event) =>
-                onNotesChange(event.target.value.slice(0, NOTES_MAX))
-              }
-              rows={5}
-              placeholder="補充這家餐廳的特色、推薦餐點或其他資訊吧～"
-              className={`${inputClass} resize-none leading-relaxed`}
-            />
-            <span className="pointer-events-none absolute right-2 bottom-2 text-[10px] text-cocoa/60">
-              {notes.length} / {NOTES_MAX}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {showSpecialHoursWarning && weeklyHours ? (
         <SpecialHoursSheet
           open={specialHoursOpen}
@@ -449,6 +389,6 @@ export default function AddRestaurantFormCard({
           onClose={() => setSpecialHoursOpen(false)}
         />
       ) : null}
-    </section>
+    </>
   );
 }

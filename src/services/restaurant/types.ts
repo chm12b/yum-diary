@@ -21,6 +21,13 @@ export type CreateRestaurantInput = {
   businessHours?: BusinessHoursInput | null;
   note?: string | null;
   googlePlaceId?: string | null;
+  googleRating?: number | null;
+  googleRatingCount?: number | null;
+  priceLevel?: number | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type RestaurantRecord =
