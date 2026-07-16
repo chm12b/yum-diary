@@ -31,12 +31,12 @@ function summarizeNotes(notes: string, maxLength = 80): string {
 }
 
 export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
-  const { lastVisited, myRating, recordCount, images, imageUrl, records } =
-    restaurant;
-  const thumbnailUrl = images[0]?.url ?? imageUrl;
+  const { lastVisited, myRating, recordCount, records } = restaurant;
   const totalRecords = recordCount ?? records?.length ?? 0;
   const hasRecords = totalRecords > 0;
   const latest = records?.[0];
+  const latestPhoto = latest?.photo ?? null;
+  const hasLatestPhoto = Boolean(latestPhoto);
   const notesSummary = latest?.notes
     ? summarizeNotes(latest.notes)
     : null;
@@ -66,15 +66,19 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
             href={`/records/${latest.id}`}
             className="block px-4 pt-5 pb-3 transition-colors hover:bg-cream-bg/40"
           >
-            <div className="flex gap-3">
-              <div className="relative h-[80px] w-[110px] shrink-0 overflow-hidden rounded-full border-2 border-white shadow-soft">
-                <Image
-                  src={thumbnailUrl}
-                  alt=""
-                  fill
-                  className="object-cover"
-                />
-              </div>
+            <div className={hasLatestPhoto ? "flex gap-3" : "space-y-1.5"}>
+              {hasLatestPhoto && latestPhoto ? (
+                <div className="relative h-[80px] w-[110px] shrink-0 overflow-hidden rounded-full border-2 border-white shadow-soft">
+                  <Image
+                    src={latestPhoto}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="110px"
+                    unoptimized
+                  />
+                </div>
+              ) : null}
               <div className="min-w-0 flex-1 space-y-1.5 pt-0.5">
                 {lastVisited ? (
                   <p className="text-xs text-cocoa">
@@ -93,20 +97,7 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
           </Link>
         ) : (
           <div className="px-4 pt-5 pb-3">
-            <div className="flex gap-3">
-              <div className="relative h-[80px] w-[110px] shrink-0 overflow-hidden rounded-full border-2 border-white shadow-soft">
-                <Image
-                  src={thumbnailUrl}
-                  alt=""
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="min-w-0 flex-1 space-y-1.5 pt-0.5" />
-            </div>
-            <p className="mt-3 max-w-[calc(100%-6.5rem)] text-sm text-cocoa/60">
-              尚未紀錄
-            </p>
+            <p className="text-sm text-cocoa/60">尚未紀錄</p>
           </div>
         )}
 

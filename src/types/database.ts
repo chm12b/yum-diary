@@ -97,6 +97,7 @@ export type Database = {
           price_level: number | null;
           business_hours: Json | null;
           last_google_sync_at: string | null;
+          restaurant_cover_path: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -121,6 +122,7 @@ export type Database = {
           price_level?: number | null;
           business_hours?: Json | null;
           last_google_sync_at?: string | null;
+          restaurant_cover_path?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -145,6 +147,7 @@ export type Database = {
           price_level?: number | null;
           business_hours?: Json | null;
           last_google_sync_at?: string | null;
+          restaurant_cover_path?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -205,6 +208,33 @@ export type Database = {
           restaurant_id?: string;
           storage_path?: string;
           page?: number;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      record_photos: {
+        Row: {
+          id: string;
+          record_id: string;
+          storage_path: string;
+          photo_order: number;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          record_id: string;
+          storage_path: string;
+          photo_order?: number;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          record_id?: string;
+          storage_path?: string;
+          photo_order?: number;
           created_by?: string | null;
           created_at?: string;
         };

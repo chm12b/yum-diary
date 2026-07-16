@@ -17,6 +17,8 @@ export type Restaurant = {
   id: string;
   name: string;
   imageUrl: string;
+  /** Storage object key for the cover; null when using the placeholder. */
+  coverPath?: string | null;
   rating: number;
   reviewCount: number;
   /** Google price level 0–4 ($ – $$$$$); null / undefined when unavailable. */
@@ -57,7 +59,7 @@ export type DiaryRecord = {
   rating: number;
   order: string;
   notes: string;
-  photo: string;
+  photo: string | null;
   dateTagColor?: "pink" | "yellow" | "green";
   orderHighlightColor?: "pink" | "yellow" | "green";
   washiTape?: "pink" | "khaki";

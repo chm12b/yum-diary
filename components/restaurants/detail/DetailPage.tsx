@@ -14,6 +14,7 @@ import type { GeoPoint } from "@/src/lib/restaurants/distance";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 import { getCurrentGroup } from "@/src/services/groups/group.service";
 import { listRestaurantRecords } from "@/src/services/record";
+import { listFirstRecordPhotoUrls } from "@/src/services/record-photo";
 import {
   getRestaurant,
   GoogleSyncNotFoundError,
@@ -70,6 +71,10 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         getCurrentGroup(),
       ]);
 
+      const firstPhotoUrls = await listFirstRecordPhotoUrls(
+        diningRecords.map((record) => record.id),
+      );
+
       referenceRef.current = groupResult.data
         ? {
             lat: groupResult.data.referenceLat,
@@ -84,7 +89,12 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       }
 
       setRestaurant(
-        mapRestaurantRecordToDetail(row, diningRecords, referenceRef.current),
+        mapRestaurantRecordToDetail(
+          row,
+          diningRecords,
+          referenceRef.current,
+          firstPhotoUrls,
+        ),
       );
       setStatus("ready");
     } catch {
@@ -105,11 +115,15 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         syncRestaurantFromGoogle(restaurantId),
         listRestaurantRecords(restaurantId),
       ]);
+      const firstPhotoUrls = await listFirstRecordPhotoUrls(
+        diningRecords.map((record) => record.id),
+      );
       setRestaurant(
         mapRestaurantRecordToDetail(
           updated,
           diningRecords,
           referenceRef.current,
+          firstPhotoUrls,
         ),
       );
       showToast("success", "✨ 已同步最新 Google 資料");

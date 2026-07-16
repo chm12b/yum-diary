@@ -34,6 +34,7 @@ import {
   type CreateRestaurantInput,
   type UpdateRestaurantInput,
 } from "@/src/services/restaurant";
+import { uploadRestaurantCover } from "@/src/services/restaurant-cover";
 
 const FILL_NOTICE_MS = 2000;
 const SUCCESS_TOAST_MS = 1200;
@@ -70,6 +71,8 @@ export default function AddRestaurantPage({
   const [openAllYear, setOpenAllYear] = useState(false);
   const [irregularHolidays, setIrregularHolidays] = useState(false);
   const [googlePhotoName, setGooglePhotoName] = useState<string | null>(null);
+  const [coverPath, setCoverPath] = useState<string | null>(null);
+  const [pendingCoverFile, setPendingCoverFile] = useState<File | null>(null);
   const [googlePlaceId, setGooglePlaceId] = useState<string | null>(null);
   const [googleRating, setGoogleRating] = useState<number | null>(null);
   const [googleRatingCount, setGoogleRatingCount] = useState<number | null>(
@@ -143,6 +146,8 @@ export default function AddRestaurantPage({
         setSpecialHours(false);
         setWeeklyHours(null);
         setGooglePhotoName(null);
+        setCoverPath(row.restaurant_cover_path ?? null);
+        setPendingCoverFile(null);
         setIsLoadingRestaurant(false);
       } catch {
         if (!cancelled) {
@@ -329,7 +334,15 @@ export default function AddRestaurantPage({
         businessHours,
       };
 
-      await createRestaurant(input);
+      const created = await createRestaurant(input);
+
+      if (pendingCoverFile) {
+        await uploadRestaurantCover({
+          restaurantId: created.id,
+          file: pendingCoverFile,
+        });
+        setPendingCoverFile(null);
+      }
 
       showToast("success", "餐廳已加入收藏！");
 
@@ -392,6 +405,11 @@ export default function AddRestaurantPage({
           <section className="px-5 pb-4">
             <div className="overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
               <AddRestaurantFormCard
+                restaurantId={restaurantId}
+                coverPath={coverPath}
+                onCoverPathChange={setCoverPath}
+                pendingCoverFile={pendingCoverFile}
+                onPendingCoverFileChange={setPendingCoverFile}
                 name={name}
                 onNameChange={setName}
                 categoryLabel={categoryLabel}
@@ -444,6 +462,7 @@ export default function AddRestaurantPage({
                 onIrregularHolidaysChange={setIrregularHolidays}
                 googlePhotoName={googlePhotoName}
                 onClearGooglePhoto={() => setGooglePhotoName(null)}
+                onToast={showToast}
                 specialHours={specialHours}
                 weeklyHours={weeklyHours}
               />

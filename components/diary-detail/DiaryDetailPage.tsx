@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import DiaryDetailContent from "@/components/diary-detail/DiaryDetailContent";
 import DiaryDetailHeader from "@/components/diary-detail/DiaryDetailHeader";
+import RecordPhotoSection from "@/components/diary-detail/RecordPhotoSection";
 import { getRecord, type DiningRecord } from "@/src/services/record";
 
 type DiaryDetailPageProps = {
@@ -101,6 +102,7 @@ export default function DiaryDetailPage({ recordId }: DiaryDetailPageProps) {
         recordId={record.id}
       />
       <DiaryDetailContent record={record} />
+      <RecordPhotoSection recordId={record.id} />
     </div>
   );
 }

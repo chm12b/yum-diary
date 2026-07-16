@@ -1,5 +1,9 @@
 import { parseOpeningHours } from "@/src/lib/restaurants/business-hours";
 import {
+  hasRestaurantCover,
+  resolveRestaurantCoverUrl,
+} from "@/src/lib/restaurants/cover-url";
+import {
   distanceMetersOrZero,
   type GeoPoint,
 } from "@/src/lib/restaurants/distance";
@@ -8,41 +12,49 @@ import type { DiaryRecord, RestaurantDetail } from "@/src/lib/restaurant-types";
 import type { DiningRecord } from "@/src/services/record";
 import type { RestaurantRecord } from "@/src/services/restaurant";
 
-const PLACEHOLDER_IMAGE = "/restaurants/placeholder.svg";
-
-function mapDiningRecordToDiary(row: DiningRecord): DiaryRecord {
+function mapDiningRecordToDiary(
+  row: DiningRecord,
+  photoUrl: string | null = null,
+): DiaryRecord {
   return {
     id: row.id,
     visitDate: row.visit_date,
     rating: row.rating,
     order: "",
     notes: row.notes,
-    photo: "",
+    photo: photoUrl,
   };
 }
 
 /**
  * Map a DB restaurant row to the existing Detail UI model.
- * Photos / menu are placeholders until those features ship.
+ * Cover comes from `restaurant_cover_path`; menu is loaded separately.
  */
 export function mapRestaurantRecordToDetail(
   row: RestaurantRecord,
   diningRecords: DiningRecord[] = [],
   reference: GeoPoint | null = null,
+  firstPhotoUrls: Map<string, string> = new Map(),
 ): RestaurantDetail {
   const priceMin = row.price_min ?? 0;
   const priceMax = row.price_max ?? priceMin;
-  const records = diningRecords.map(mapDiningRecordToDiary);
+  const records = diningRecords.map((record) =>
+    mapDiningRecordToDiary(record, firstPhotoUrls.get(record.id) ?? null),
+  );
   const latest = records[0];
+  const coverPath = row.restaurant_cover_path;
+  const imageUrl = resolveRestaurantCoverUrl(coverPath, row.updated_at);
+  const hasCover = hasRestaurantCover(coverPath);
 
   return {
     id: row.id,
     name: row.name,
-    imageUrl: PLACEHOLDER_IMAGE,
+    imageUrl,
+    coverPath: coverPath ?? null,
     images: [
       {
-        id: `${row.id}-placeholder`,
-        url: PLACEHOLDER_IMAGE,
+        id: hasCover ? `${row.id}-cover` : `${row.id}-placeholder`,
+        url: imageUrl,
         alt: row.name,
       },
     ],

@@ -1,0 +1,31 @@
+import { createClient } from "@/src/lib/supabase/client";
+import { deletePhoto } from "@/src/services/storage";
+
+import type { DeleteRecordPhotoInput } from "./types";
+
+/**
+ * Delete a diary photo: remove the DB row first (so the UI stops referencing a
+ * missing file), then best-effort remove the Storage object.
+ * Throws on validation / database / storage errors.
+ */
+export async function deleteRecordPhoto(
+  input: DeleteRecordPhotoInput,
+): Promise<void> {
+  const id = input.id?.trim() ?? "";
+  if (!id) {
+    throw new Error("Missing required field: id");
+  }
+
+  const supabase = createClient();
+
+  const { error } = await supabase.from("record_photos").delete().eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  const storagePath = input.storagePath?.trim() ?? "";
+  if (storagePath) {
+    await deletePhoto(storagePath);
+  }
+}

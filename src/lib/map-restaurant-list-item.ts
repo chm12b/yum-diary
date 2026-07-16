@@ -1,3 +1,4 @@
+import { resolveRestaurantCoverUrl } from "@/src/lib/restaurants/cover-url";
 import {
   distanceMetersOrZero,
   type GeoPoint,
@@ -20,7 +21,11 @@ export function mapRestaurantRecordToListItem(
   return {
     id: row.id,
     name: row.name,
-    imageUrl: "/restaurants/placeholder.svg",
+    imageUrl: resolveRestaurantCoverUrl(
+      row.restaurant_cover_path,
+      row.updated_at,
+    ),
+    coverPath: row.restaurant_cover_path ?? null,
     rating: row.google_rating ?? 0,
     reviewCount: row.google_rating_count ?? 0,
     priceLevel: row.price_level ?? null,

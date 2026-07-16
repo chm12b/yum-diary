@@ -10,6 +10,7 @@ import RecordsTitleSection from "@/components/records/RecordsTitleSection";
 import { mapRestaurantRecordToDetail } from "@/src/lib/map-restaurant-detail";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 import { listRestaurantRecords } from "@/src/services/record";
+import { listFirstRecordPhotoUrls } from "@/src/services/record-photo";
 import { getRestaurant } from "@/src/services/restaurant";
 
 type RecordsPageProps = {
@@ -31,13 +32,19 @@ export default function RecordsPage({ restaurantId }: RecordsPageProps) {
         listRestaurantRecords(restaurantId),
       ]);
 
+      const firstPhotoUrls = await listFirstRecordPhotoUrls(
+        diningRecords.map((record) => record.id),
+      );
+
       if (!row) {
         setRestaurant(null);
         setStatus("not-found");
         return;
       }
 
-      setRestaurant(mapRestaurantRecordToDetail(row, diningRecords));
+      setRestaurant(
+        mapRestaurantRecordToDetail(row, diningRecords, null, firstPhotoUrls),
+      );
       setStatus("ready");
     } catch {
       setRestaurant(null);

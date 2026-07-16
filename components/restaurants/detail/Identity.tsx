@@ -1,22 +1,42 @@
+"use client";
+
 import { MapPin } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 
+import MenuLightbox from "@/components/restaurants/detail/MenuLightbox";
 import StarRating from "@/components/restaurants/StarRating";
 import StatusBadge from "@/components/shared/StatusBadge";
 import { homeAssets } from "@/src/lib/home-assets";
+import { hasRestaurantCover } from "@/src/lib/restaurants/cover-url";
 import { formatDistance } from "@/src/lib/restaurants/distance";
 import { resolvePriceLabel } from "@/src/lib/restaurants/price-level";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
+import type { MenuPhoto } from "@/src/services/menu-photo";
 
 type IdentityProps = {
   restaurant: RestaurantDetail;
 };
 
 export default function Identity({ restaurant }: IdentityProps) {
-  const imageUrl =
-    restaurant.images[0]?.url ?? restaurant.imageUrl;
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const imageUrl = restaurant.images[0]?.url ?? restaurant.imageUrl;
+  const hasCover = hasRestaurantCover(restaurant.coverPath);
   const hasDistance = restaurant.distanceMeters > 0;
   const priceLabel = resolvePriceLabel(restaurant);
+
+  const lightboxPhotos: MenuPhoto[] = hasCover
+    ? [
+        {
+          id: `${restaurant.id}-cover`,
+          restaurantId: restaurant.id,
+          storagePath: restaurant.coverPath ?? "",
+          page: 1,
+          url: imageUrl,
+          createdAt: "",
+        },
+      ]
+    : [];
 
   return (
     <section className="px-5 pt-1 pb-2">
@@ -30,17 +50,37 @@ export default function Identity({ restaurant }: IdentityProps) {
             aria-hidden
             className="pointer-events-none absolute -top-[42px] left-1/2 z-10 h-20 w-[60px] -translate-x-1/2 -rotate-2 object-contain"
           />
-          <div className="h-[120px] w-40 rounded-xl border-[3px] border-white bg-white p-1.5 shadow-soft">
-            <div className="relative h-full w-full overflow-hidden rounded-lg">
-              <Image
-                src={imageUrl}
-                alt={restaurant.name}
-                fill
-                className="object-cover"
-                priority
-              />
+          {hasCover ? (
+            <button
+              type="button"
+              aria-label="放大瀏覽店家照片"
+              onClick={() => setLightboxOpen(true)}
+              className="h-[120px] w-40 rounded-xl border-[3px] border-white bg-white p-1.5 shadow-soft"
+            >
+              <div className="relative h-full w-full overflow-hidden rounded-lg">
+                <Image
+                  src={imageUrl}
+                  alt={restaurant.name}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                  priority
+                />
+              </div>
+            </button>
+          ) : (
+            <div className="h-[120px] w-40 rounded-xl border-[3px] border-white bg-white p-1.5 shadow-soft">
+              <div className="relative h-full w-full overflow-hidden rounded-lg">
+                <Image
+                  src={imageUrl}
+                  alt={restaurant.name}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
             </div>
-          </div>
+          )}
           <Image
             src={homeAssets.stickerFlowerPink}
             alt=""
@@ -93,6 +133,15 @@ export default function Identity({ restaurant }: IdentityProps) {
           ) : null}
         </div>
       </div>
+
+      {lightboxOpen && lightboxPhotos.length > 0 ? (
+        <MenuLightbox
+          photos={lightboxPhotos}
+          initialIndex={0}
+          restaurantName={restaurant.name}
+          onClose={() => setLightboxOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }

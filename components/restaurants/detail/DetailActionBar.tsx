@@ -30,15 +30,15 @@ export default function DetailActionBar({ isFavorite }: DetailActionBarProps) {
         <div className="relative min-w-0 flex-1">
           <button
             type="button"
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sakura-pink pr-8 text-lg font-bold tracking-[1px] text-deep-brown shadow-pink-button"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-sakura-pink pr-8 text-[15px] font-bold tracking-[1px] text-deep-brown shadow-pink-button"
           >
             <Image
               src={homeAssets.diceEatThis}
               alt=""
-              width={70}
-              height={70}
+              width={60}
+              height={60}
               aria-hidden
-              className="mt-[7px] ml-[5px] mr-[-10px] h-[70px] w-[70px] object-contain"
+              className="mt-[7px] ml-[5px] mr-[-10px] h-[60px] w-[60px] object-contain"
             />
             今晚吃這家！
           </button>

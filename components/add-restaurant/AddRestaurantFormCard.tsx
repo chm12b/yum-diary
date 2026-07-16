@@ -2,7 +2,6 @@
 
 import {
   CalendarOff,
-  Camera,
   ChevronDown,
   Clock,
   Globe,
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import CoverPhotoField from "@/components/add-restaurant/CoverPhotoField";
 import SpecialHoursSheet from "@/components/add-restaurant/SpecialHoursSheet";
 import TimePicker24 from "@/components/add-restaurant/TimePicker24";
 import type {
@@ -52,7 +52,7 @@ function FieldLabel({
   hint,
   trailing,
 }: {
-  icon: typeof Camera;
+  icon: typeof Soup;
   label: string;
   required?: boolean;
   optional?: boolean;
@@ -77,6 +77,11 @@ const inputClass =
   "w-full rounded-xl border border-border bg-cream-bg/60 px-3 py-2.5 text-sm text-deep-brown placeholder:text-cocoa/50 focus:outline-none focus:ring-1 focus:ring-caramel/40";
 
 export type AddRestaurantFormCardProps = {
+  restaurantId?: string;
+  coverPath: string | null;
+  onCoverPathChange: (path: string | null) => void;
+  pendingCoverFile: File | null;
+  onPendingCoverFileChange: (file: File | null) => void;
   name: string;
   onNameChange: (value: string) => void;
   categoryLabel: string;
@@ -103,11 +108,17 @@ export type AddRestaurantFormCardProps = {
   /** Google photo resource name for preview only (no Storage). */
   googlePhotoName: string | null;
   onClearGooglePhoto: () => void;
+  onToast?: (type: "success" | "error", message: string) => void;
   specialHours?: boolean;
   weeklyHours?: WeeklyHoursRow[] | null;
 };
 
 export default function AddRestaurantFormCard({
+  restaurantId,
+  coverPath,
+  onCoverPathChange,
+  pendingCoverFile,
+  onPendingCoverFileChange,
   name,
   onNameChange,
   categoryLabel,
@@ -130,73 +141,41 @@ export default function AddRestaurantFormCard({
   onIrregularHolidaysChange,
   googlePhotoName,
   onClearGooglePhoto,
+  onToast,
   specialHours = false,
   weeklyHours = null,
 }: AddRestaurantFormCardProps) {
   const [specialHoursOpen, setSpecialHoursOpen] = useState(false);
-  const photoPreviewUrl = googlePhotoName
-    ? `/api/google/places/photo?name=${encodeURIComponent(googlePhotoName)}`
-    : null;
   const showSpecialHoursWarning =
     specialHours && weeklyHours != null && weeklyHours.length > 0;
   const canAddPeriod = periods.length < MAX_BUSINESS_HOUR_PERIODS;
 
   return (
     <>
-      {/* Store photo */}
-        <div className="space-y-3 px-4 py-3.5">
-          <FieldLabel icon={Camera} label="店家照片" optional />
-          {photoPreviewUrl ? (
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-cream-bg/40">
-              {/* eslint-disable-next-line @next/next/no-img-element -- Google preview proxy URL */}
-              <img
-                src={photoPreviewUrl}
-                alt="Google 店家照片預覽"
-                className="aspect-[16/10] w-full object-cover"
-              />
-              <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-deep-brown/55 px-3 py-2">
-                <span className="text-[11px] text-rice-white">
-                  Google Maps 預覽（尚未儲存）
-                </span>
-                <button
-                  type="button"
-                  onClick={onClearGooglePhoto}
-                  className="text-[11px] font-medium text-sakura-pink"
-                >
-                  移除
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              aria-label="上傳店家照片"
-              className="flex w-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-caramel/50 bg-cream-bg/40 px-4 py-10 text-cocoa transition-colors hover:bg-cream-bg"
-            >
-              <Plus className="h-7 w-7" strokeWidth={2} />
-              <span className="text-sm font-medium text-deep-brown">
-                上傳店家照片
-              </span>
-              <span className="text-[11px] text-text-secondary">
-                建議使用店面或招牌照片
-              </span>
-            </button>
-          )}
-        </div>
+      <CoverPhotoField
+        restaurantId={restaurantId}
+        coverPath={coverPath}
+        onCoverPathChange={onCoverPathChange}
+        pendingFile={pendingCoverFile}
+        onPendingFileChange={onPendingCoverFileChange}
+        googlePhotoName={googlePhotoName}
+        onClearGooglePhoto={onClearGooglePhoto}
+        onToast={onToast}
+      />
 
-        <FormDivider />
+      <FormDivider />
 
-        {/* Name */}
-        <div className="space-y-2.5 px-4 py-3.5">
-          <FieldLabel icon={Soup} label="店名" required />
-          <input
-            type="text"
-            value={name}
-            onChange={(event) => onNameChange(event.target.value)}
-            placeholder="請輸入店名"
-            className={inputClass}
-          />
-        </div>
+      {/* Name */}
+      <div className="space-y-2.5 px-4 py-3.5">
+        <FieldLabel icon={Soup} label="店名" required />
+        <input
+          type="text"
+          value={name}
+          onChange={(event) => onNameChange(event.target.value)}
+          placeholder="請輸入店名"
+          className={inputClass}
+        />
+      </div>
 
         <FormDivider />
 

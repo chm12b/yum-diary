@@ -47,8 +47,8 @@ export default function DiaryCard({ record }: DiaryCardProps) {
             📅 {formatVisitDate(record.visitDate)}
           </span>
 
-          <div className="mt-3 flex gap-3">
-            {hasPhoto ? (
+          {hasPhoto ? (
+            <div className="mt-3 flex gap-3">
               <div className="relative shrink-0">
                 <Image
                   src={washiTapeSrc}
@@ -64,28 +64,33 @@ export default function DiaryCard({ record }: DiaryCardProps) {
                 >
                   <div className="relative aspect-square w-full overflow-hidden rounded-md">
                     <Image
-                      src={record.photo}
+                      src={record.photo!}
                       alt={record.order || "用餐照片"}
                       fill
                       className="object-cover"
                       sizes="88px"
+                      unoptimized
                     />
                   </div>
                 </div>
               </div>
-            ) : null}
 
-            <div className="min-w-0 flex-1 space-y-2 pt-1">
-              <RecordStarRating rating={record.rating} />
-              {hasOrder ? (
-                <span
-                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium text-deep-brown ${orderHighlightColor}`}
-                >
-                  {record.order}
-                </span>
-              ) : null}
+              <div className="min-w-0 flex-1 space-y-2 pt-1">
+                <RecordStarRating rating={record.rating} />
+                {hasOrder ? (
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium text-deep-brown ${orderHighlightColor}`}
+                  >
+                    {record.order}
+                  </span>
+                ) : null}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="mt-3 space-y-2">
+              <RecordStarRating rating={record.rating} />
+            </div>
+          )}
 
           {record.notes.trim() ? (
             <div className="mt-3 flex gap-2">

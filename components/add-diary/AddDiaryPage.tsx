@@ -8,11 +8,13 @@ import AddDiaryBunnyHero from "@/components/add-diary/AddDiaryBunnyHero";
 import AddDiaryFooter from "@/components/add-diary/AddDiaryFooter";
 import AddDiaryFormCard from "@/components/add-diary/AddDiaryFormCard";
 import AddDiaryHeader from "@/components/add-diary/AddDiaryHeader";
+import RecordPhotoManagerSection from "@/components/add-diary/RecordPhotoManagerSection";
 import {
   createRecord,
   getRecord,
   updateRecord,
 } from "@/src/services/record";
+import { uploadRecordPhoto } from "@/src/services/record-photo";
 
 type AddDiaryPageProps =
   | { mode?: "create"; restaurantId: string; recordId?: never }
@@ -45,6 +47,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
   const [visitDate, setVisitDate] = useState(todayIsoDate);
   const [rating, setRating] = useState(4);
   const [notes, setNotes] = useState("");
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>(
     isEdit ? "loading" : "ready",
@@ -153,12 +156,17 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
         throw new Error("Missing restaurantId");
       }
 
-      await createRecord({
+      const created = await createRecord({
         restaurantId,
         visitDate,
         rating,
         notes: trimmedNotes,
       });
+
+      for (const file of pendingPhotos) {
+        await uploadRecordPhoto({ recordId: created.id, file });
+      }
+      setPendingPhotos([]);
 
       showToast("success", "已新增用餐紀錄。");
 
@@ -166,7 +174,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
         window.clearTimeout(navigateTimerRef.current);
       }
       navigateTimerRef.current = window.setTimeout(() => {
-        router.push(`/restaurants/${restaurantId}`);
+        router.push(`/records/${created.id}`);
         navigateTimerRef.current = null;
       }, SUCCESS_NAVIGATE_MS);
     } catch {
@@ -232,6 +240,22 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
         onRatingChange={setRating}
         onNotesChange={setNotes}
       />
+      <section className="px-5 pb-4">
+        <div className="overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
+          {isEdit && recordId ? (
+            <RecordPhotoManagerSection
+              recordId={recordId}
+              onToast={showToast}
+            />
+          ) : (
+            <RecordPhotoManagerSection
+              pendingFiles={pendingPhotos}
+              onPendingFilesChange={setPendingPhotos}
+              onToast={showToast}
+            />
+          )}
+        </div>
+      </section>
       <AddDiaryFooter
         disabled={!notes.trim()}
         isSubmitting={isSubmitting}
