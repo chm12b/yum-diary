@@ -15,6 +15,10 @@ import {
   updateRecord,
 } from "@/src/services/record";
 import { uploadRecordPhoto } from "@/src/services/record-photo";
+import {
+  listRecordFoods,
+  replaceRecordFoods,
+} from "@/src/services/record-food";
 
 type AddDiaryPageProps =
   | { mode?: "create"; restaurantId: string; recordId?: never }
@@ -47,6 +51,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
   const [visitDate, setVisitDate] = useState(todayIsoDate);
   const [rating, setRating] = useState(4);
   const [notes, setNotes] = useState("");
+  const [foodRows, setFoodRows] = useState<string[]>([""]);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>(
@@ -79,7 +84,10 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
       setLoadStatus("loading");
 
       try {
-        const row = await getRecord(recordId!);
+        const [row, foods] = await Promise.all([
+          getRecord(recordId!),
+          listRecordFoods(recordId!),
+        ]);
 
         if (cancelled) {
           return;
@@ -93,6 +101,9 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
         setVisitDate(row.visit_date);
         setRating(row.rating);
         setNotes(row.notes);
+        setFoodRows(
+          foods.length > 0 ? foods.map((food) => food.name) : [""],
+        );
         setLoadStatus("ready");
       } catch {
         if (!cancelled) {
@@ -139,6 +150,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
           rating,
           notes: trimmedNotes,
         });
+        await replaceRecordFoods(recordId, foodRows);
 
         showToast("success", "已更新用餐紀錄。");
 
@@ -166,6 +178,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
       for (const file of pendingPhotos) {
         await uploadRecordPhoto({ recordId: created.id, file });
       }
+      await replaceRecordFoods(created.id, foodRows);
       setPendingPhotos([]);
 
       showToast("success", "已新增用餐紀錄。");
@@ -236,9 +249,11 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
         visitDate={visitDate}
         rating={rating}
         notes={notes}
+        foodRows={foodRows}
         onVisitDateChange={setVisitDate}
         onRatingChange={setRating}
         onNotesChange={setNotes}
+        onFoodRowsChange={setFoodRows}
       />
       <section className="px-5 pb-4">
         <div className="overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">

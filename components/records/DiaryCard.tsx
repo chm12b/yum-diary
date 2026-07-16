@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import FoodChipsRow from "@/components/records/FoodChipsRow";
 import RecordStarRating from "@/components/records/RecordStarRating";
 import { formatVisitDate } from "@/src/lib/format-visit-date";
 import { homeAssets } from "@/src/lib/home-assets";
@@ -16,23 +17,16 @@ const dateTagColors = {
   green: "bg-green-100",
 } as const;
 
-const orderHighlightColors = {
-  pink: "bg-sakura-pink/40",
-  yellow: "bg-amber-100/80",
-  green: "bg-green-100/80",
-} as const;
-
 export default function DiaryCard({ record }: DiaryCardProps) {
   const dateTagColor = dateTagColors[record.dateTagColor ?? "pink"];
-  const orderHighlightColor =
-    orderHighlightColors[record.orderHighlightColor ?? "pink"];
   const washiTapeSrc =
     record.washiTape === "khaki"
       ? homeAssets.washiTapeKhaki
       : homeAssets.washiTapePink;
   const photoRotation = record.photoRotation ?? 3;
   const hasPhoto = Boolean(record.photo);
-  const hasOrder = Boolean(record.order.trim());
+  const foods = record.foods ?? [];
+  const hasFoods = foods.length > 0;
 
   return (
     <Link
@@ -65,7 +59,7 @@ export default function DiaryCard({ record }: DiaryCardProps) {
                   <div className="relative aspect-square w-full overflow-hidden rounded-md">
                     <Image
                       src={record.photo!}
-                      alt={record.order || "用餐照片"}
+                      alt="用餐照片"
                       fill
                       className="object-cover"
                       sizes="88px"
@@ -77,18 +71,13 @@ export default function DiaryCard({ record }: DiaryCardProps) {
 
               <div className="min-w-0 flex-1 space-y-2 pt-1">
                 <RecordStarRating rating={record.rating} />
-                {hasOrder ? (
-                  <span
-                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium text-deep-brown ${orderHighlightColor}`}
-                  >
-                    {record.order}
-                  </span>
-                ) : null}
+                {hasFoods ? <FoodChipsRow foods={foods} /> : null}
               </div>
             </div>
           ) : (
             <div className="mt-3 space-y-2">
               <RecordStarRating rating={record.rating} />
+              {hasFoods ? <FoodChipsRow foods={foods} /> : null}
             </div>
           )}
 

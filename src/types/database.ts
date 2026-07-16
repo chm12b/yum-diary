@@ -240,6 +240,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      record_foods: {
+        Row: {
+          id: string;
+          record_id: string;
+          name: string;
+          display_order: number;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          record_id: string;
+          name: string;
+          display_order?: number;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          record_id?: string;
+          name?: string;
+          display_order?: number;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

@@ -60,6 +60,8 @@ export type DiaryRecord = {
   order: string;
   notes: string;
   photo: string | null;
+  /** Ordered food names for timeline chips (display_order ASC). */
+  foods?: string[];
   dateTagColor?: "pink" | "yellow" | "green";
   orderHighlightColor?: "pink" | "yellow" | "green";
   washiTape?: "pink" | "khaki";

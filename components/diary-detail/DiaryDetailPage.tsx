@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 
 import DiaryDetailContent from "@/components/diary-detail/DiaryDetailContent";
 import DiaryDetailHeader from "@/components/diary-detail/DiaryDetailHeader";
+import OrderedFoodSection from "@/components/diary-detail/OrderedFoodSection";
 import RecordPhotoSection from "@/components/diary-detail/RecordPhotoSection";
 import { getRecord, type DiningRecord } from "@/src/services/record";
+import { listRecordFoods, type RecordFood } from "@/src/services/record-food";
 
 type DiaryDetailPageProps = {
   recordId: string;
@@ -16,6 +18,7 @@ type LoadStatus = "loading" | "ready" | "not-found" | "error";
 
 export default function DiaryDetailPage({ recordId }: DiaryDetailPageProps) {
   const [record, setRecord] = useState<DiningRecord | null>(null);
+  const [foods, setFoods] = useState<RecordFood[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [attempt, setAttempt] = useState(0);
 
@@ -26,7 +29,10 @@ export default function DiaryDetailPage({ recordId }: DiaryDetailPageProps) {
       setStatus("loading");
 
       try {
-        const row = await getRecord(recordId);
+        const [row, foodRows] = await Promise.all([
+          getRecord(recordId),
+          listRecordFoods(recordId),
+        ]);
 
         if (cancelled) {
           return;
@@ -34,11 +40,13 @@ export default function DiaryDetailPage({ recordId }: DiaryDetailPageProps) {
 
         if (!row) {
           setRecord(null);
+          setFoods([]);
           setStatus("not-found");
           return;
         }
 
         setRecord(row);
+        setFoods(foodRows);
         setStatus("ready");
       } catch {
         if (!cancelled) {
@@ -102,6 +110,7 @@ export default function DiaryDetailPage({ recordId }: DiaryDetailPageProps) {
         recordId={record.id}
       />
       <DiaryDetailContent record={record} />
+      <OrderedFoodSection foods={foods} />
       <RecordPhotoSection recordId={record.id} />
     </div>
   );

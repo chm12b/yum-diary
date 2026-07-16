@@ -11,6 +11,7 @@ import { mapRestaurantRecordToDetail } from "@/src/lib/map-restaurant-detail";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 import { listRestaurantRecords } from "@/src/services/record";
 import { listFirstRecordPhotoUrls } from "@/src/services/record-photo";
+import { listRecordFoods } from "@/src/services/record-food";
 import { getRestaurant } from "@/src/services/restaurant";
 
 type RecordsPageProps = {
@@ -42,9 +43,24 @@ export default function RecordsPage({ restaurantId }: RecordsPageProps) {
         return;
       }
 
-      setRestaurant(
-        mapRestaurantRecordToDetail(row, diningRecords, null, firstPhotoUrls),
+      const detail = mapRestaurantRecordToDetail(
+        row,
+        diningRecords,
+        null,
+        firstPhotoUrls,
       );
+
+      const recordsWithFoods = await Promise.all(
+        (detail.records ?? []).map(async (record) => {
+          const foods = await listRecordFoods(record.id);
+          return {
+            ...record,
+            foods: foods.map((food) => food.name),
+          };
+        }),
+      );
+
+      setRestaurant({ ...detail, records: recordsWithFoods });
       setStatus("ready");
     } catch {
       setRestaurant(null);

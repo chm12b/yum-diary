@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import StarPicker from "@/components/add-diary/StarPicker";
+import OrderedFoodField from "@/components/add-diary/OrderedFoodField";
 import { formatVisitDate } from "@/src/lib/format-visit-date";
 
 const NOTES_MAX = 200;
@@ -46,18 +47,22 @@ type AddDiaryFormCardProps = {
   visitDate: string;
   rating: number;
   notes: string;
+  foodRows: string[];
   onVisitDateChange: (value: string) => void;
   onRatingChange: (value: number) => void;
   onNotesChange: (value: string) => void;
+  onFoodRowsChange: (rows: string[]) => void;
 };
 
 export default function AddDiaryFormCard({
   visitDate,
   rating,
   notes,
+  foodRows,
   onVisitDateChange,
   onRatingChange,
   onNotesChange,
+  onFoodRowsChange,
 }: AddDiaryFormCardProps) {
   return (
     <section className="px-5 pb-4">
@@ -106,6 +111,21 @@ export default function AddDiaryFormCard({
               {notes.length} / {NOTES_MAX}
             </span>
           </div>
+        </div>
+
+        <FormDivider />
+
+        <div className="space-y-2.5 px-4 py-3.5 pb-4">
+          <div className="flex items-center gap-2">
+            <span className="text-base" aria-hidden>
+              🍜
+            </span>
+            <span className="text-sm font-medium text-deep-brown">本次點餐</span>
+            <span className="text-[10px] font-medium text-text-secondary">
+              （選填）
+            </span>
+          </div>
+          <OrderedFoodField rows={foodRows} onRowsChange={onFoodRowsChange} />
         </div>
       </div>
     </section>
