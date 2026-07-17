@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import SettingsPlaceholderPage from "@/components/settings/SettingsPlaceholderPage";
+import GroupMembersPage from "@/components/settings/GroupMembersPage";
 
 type GroupMembersRouteProps = {
   params: Promise<{ groupId: string }>;
@@ -14,10 +14,5 @@ export default async function GroupMembersRoute({
   params,
 }: GroupMembersRouteProps) {
   const { groupId } = await params;
-  return (
-    <SettingsPlaceholderPage
-      title="成員"
-      backHref={`/settings/groups/${groupId}`}
-    />
-  );
+  return <GroupMembersPage groupId={groupId} />;
 }

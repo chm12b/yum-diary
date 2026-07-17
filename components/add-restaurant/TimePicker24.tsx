@@ -9,7 +9,7 @@ const MINUTES = Array.from({ length: 60 }, (_, minute) =>
 );
 
 const selectClass =
-  "w-7 shrink-0 appearance-none bg-transparent py-0.5 text-center text-[11px] leading-none tabular-nums text-deep-brown focus:outline-none [-webkit-appearance:none]";
+  "w-6 shrink-0 appearance-none bg-transparent py-0.5 text-center text-[11px] leading-none tabular-nums text-deep-brown focus:outline-none [-webkit-appearance:none] [text-align-last:center]";
 
 type TimePicker24Props = {
   value: string;
@@ -47,7 +47,7 @@ export default function TimePicker24({
   }
 
   return (
-    <div className="flex min-w-[4.25rem] flex-1 items-center justify-center gap-px rounded-lg border border-border bg-cream-bg/60 px-1 py-1.5 focus-within:ring-1 focus-within:ring-caramel/40">
+    <div className="inline-flex h-9 w-[4.5rem] shrink-0 items-center justify-center gap-0 rounded-lg border border-border bg-cream-bg/60 px-0.5 focus-within:ring-1 focus-within:ring-caramel/40">
       <select
         value={hour}
         aria-label={`${ariaLabel}（時）`}
@@ -61,7 +61,7 @@ export default function TimePicker24({
           </option>
         ))}
       </select>
-      <span className="shrink-0 text-[11px] text-cocoa" aria-hidden>
+      <span className="shrink-0 px-px text-[11px] text-cocoa" aria-hidden>
         :
       </span>
       <select

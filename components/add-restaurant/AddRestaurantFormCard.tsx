@@ -274,7 +274,7 @@ export default function AddRestaurantFormCard({
         <FormDivider />
 
         {/* Hours + closed days — side by side */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-3.5">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-3 px-4 py-3.5">
           <div className="min-w-0 space-y-2.5">
             <FieldLabel
               icon={Clock}
@@ -296,26 +296,31 @@ export default function AddRestaurantFormCard({
             />
             <div className="space-y-2">
               {periods.map((period, index) => (
-                <div key={period.id} className="flex items-center gap-1">
-                  <TimePicker24
-                    value={period.open}
-                    onChange={(open) => onPeriodChange(period.id, { open })}
-                    aria-label={`時段 ${index + 1} 開始時間`}
-                  />
-                  <span className="shrink-0 text-[10px] text-cocoa">～</span>
-                  <TimePicker24
-                    value={period.close}
-                    onChange={(close) => onPeriodChange(period.id, { close })}
-                    aria-label={`時段 ${index + 1} 結束時間`}
-                  />
+                <div key={period.id} className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <TimePicker24
+                      value={period.open}
+                      onChange={(open) => onPeriodChange(period.id, { open })}
+                      aria-label={`時段 ${index + 1} 開始時間`}
+                    />
+                    <span className="shrink-0 text-[10px] text-cocoa">～</span>
+                    <TimePicker24
+                      value={period.close}
+                      onChange={(close) =>
+                        onPeriodChange(period.id, { close })
+                      }
+                      aria-label={`時段 ${index + 1} 結束時間`}
+                    />
+                  </div>
                   {periods.length > 1 ? (
                     <button
                       type="button"
                       aria-label={`刪除時段 ${index + 1}`}
                       onClick={() => onRemovePeriod(period.id)}
-                      className="ml-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sakura-pink/70 text-deep-brown"
+                      className="inline-flex items-center gap-0.5 text-[10px] font-medium text-cocoa transition-colors hover:text-deep-brown"
                     >
                       <Minus className="h-3 w-3" strokeWidth={2.5} />
+                      刪除此時段
                     </button>
                   ) : null}
                 </div>
@@ -333,7 +338,7 @@ export default function AddRestaurantFormCard({
             </div>
           </div>
 
-          <div className="min-w-0 space-y-2.5 pl-1">
+          <div className="min-w-0 space-y-2.5 pl-1.5">
             <FieldLabel icon={CalendarOff} label="公休日" optional compact />
             <div className="flex flex-wrap gap-1.5">
               {WEEKDAYS.map((day) => {

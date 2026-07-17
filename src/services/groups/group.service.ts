@@ -37,6 +37,21 @@ export type GroupDetail = {
   inviteCode: string;
 };
 
+export type GroupMemberListItem = {
+  profileId: string;
+  displayName: string;
+  isOwner: boolean;
+  isCurrentUser: boolean;
+};
+
+type GroupMemberQueryRow = {
+  profile_id: string;
+  role: string;
+  profiles: { display_name: string | null } | null;
+};
+
+const UNKNOWN_MEMBER_NAME = "未知成員";
+
 export async function createGroup({
   groupName,
   inviteCode,
@@ -109,6 +124,59 @@ export async function getGroupDetail(
       isOwner: group.owner_id === user.id,
       inviteCode: group.invite_code,
     },
+    error: null,
+  };
+}
+
+/**
+ * List a group's members in join order.
+ * Uses one relational query to load each profile display name and role.
+ */
+export async function listGroupMembers(
+  groupId: string,
+): Promise<GroupResult<GroupMemberListItem[]>> {
+  const id = groupId.trim();
+  if (!id) {
+    return { data: [], error: null };
+  }
+
+  const supabase = createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    return { data: [], error: userError };
+  }
+
+  if (!user) {
+    return { data: [], error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("group_members")
+    .select("profile_id, role, profiles(display_name)")
+    .eq("group_id", id)
+    .order("joined_at", { ascending: true });
+
+  if (error) {
+    return { data: [], error };
+  }
+
+  const rows = (data ?? []) as unknown as GroupMemberQueryRow[];
+
+  return {
+    data: rows.map((row) => {
+      const displayName = row.profiles?.display_name?.trim() ?? "";
+
+      return {
+        profileId: row.profile_id,
+        displayName: displayName || UNKNOWN_MEMBER_NAME,
+        isOwner: row.role === "owner",
+        isCurrentUser: row.profile_id === user.id,
+      };
+    }),
     error: null,
   };
 }
