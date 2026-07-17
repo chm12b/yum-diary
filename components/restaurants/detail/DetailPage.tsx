@@ -20,6 +20,7 @@ import {
   GoogleSyncNotFoundError,
   syncRestaurantFromGoogle,
 } from "@/src/services/restaurant";
+import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 
 type DetailPageProps = {
   restaurantId: string;
@@ -35,6 +36,7 @@ type ToastState = {
 const TOAST_MS = 1800;
 
 export default function DetailPage({ restaurantId }: DetailPageProps) {
+  const { revision } = useCurrentGroup();
   const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [isSyncing, setIsSyncing] = useState(false);
@@ -144,7 +146,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
 
   useEffect(() => {
     void loadRestaurant();
-  }, [restaurantId]);
+  }, [restaurantId, revision]);
 
   if (status === "loading") {
     return (

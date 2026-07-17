@@ -75,6 +75,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      group_members: {
+        Row: {
+          id: string;
+          group_id: string;
+          profile_id: string;
+          role: string;
+          joined_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          profile_id: string;
+          role: string;
+          joined_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          group_id?: string;
+          profile_id?: string;
+          role?: string;
+          joined_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       restaurants: {
         Row: {
           id: string;
@@ -275,6 +305,22 @@ export type Database = {
       create_group: {
         Args: {
           p_group_name: string;
+          p_invite_code: string;
+        };
+        Returns: string;
+      };
+      get_invite_preview: {
+        Args: {
+          p_invite_code: string;
+        };
+        Returns: {
+          group_id: string;
+          group_name: string;
+          owner_name: string;
+        }[];
+      };
+      join_group: {
+        Args: {
           p_invite_code: string;
         };
         Returns: string;

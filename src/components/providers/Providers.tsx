@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import AppStartup from "@/src/components/providers/AppStartup";
 import { AuthProvider } from "@/src/contexts/AuthContext";
+import { CurrentGroupProvider } from "@/src/contexts/CurrentGroupContext";
 
 type ProvidersProps = {
   children: ReactNode;
@@ -12,8 +13,10 @@ type ProvidersProps = {
 export default function Providers({ children }: ProvidersProps) {
   return (
     <AuthProvider>
-      <AppStartup />
-      {children}
+      <CurrentGroupProvider>
+        <AppStartup />
+        {children}
+      </CurrentGroupProvider>
     </AuthProvider>
   );
 }

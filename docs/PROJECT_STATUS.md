@@ -1,26 +1,58 @@
 # Yum Diary Project Status
 
-Version：v1.0
+Version：v0.5.0-dev
 
-Last Updated：2026-07-16
+Last Updated：2026-07-17
 
 ---
 
-# Current Status
+# Overall Progress
 
-Current Phase：
+| Module | Status |
+|---------|--------|
+| Foundation | ✅ Completed |
+| Restaurant | ✅ Completed |
+| Diary | ✅ Completed |
+| Group | 🚧 In Progress |
+| Decide（今天吃什麼） | ⬜ Planned |
+| Settings | 🚧 In Progress |
 
-Restaurant Module ✅ Completed
+---
 
-Current Focus：
+# Current Sprint
 
-Diary Module（Diary Photo MVP ✅）
+## Milestone 4 - Group Management
+
+### Recently Completed
+
+- ✅ Settings MVP
+- ✅ Group Management
+- ✅ Group Detail
+- ✅ Header Group Switch
+- ✅ Current Group Integration
+
+### Current Focus
+
+- 🚧 Create Group（功能串接）
+- ⬜ Invite Member
+- ⬜ Join Group
 
 ---
 
 # Completed Modules
 
-## ✅ Restaurant Module
+## ✅ Foundation
+
+- Supabase
+- Authentication
+- Group Foundation
+- Current Group
+- Row Level Security（RLS）
+- Group-based Permission
+
+---
+
+## ✅ Restaurant
 
 ### Restaurant
 
@@ -60,11 +92,6 @@ Diary Module（Diary Photo MVP ✅）
 - Cover.webp
 - Menu-01.webp ~ Menu-10.webp
 
-### Security
-
-- Row Level Security（RLS）
-- Group-based Permission
-
 ### UX
 
 - Toast
@@ -74,29 +101,55 @@ Diary Module（Diary Photo MVP ✅）
 
 ---
 
-# Current Module
+## ✅ Diary
 
-## 🚧 Diary Module
+### Diary
 
-Done：
-
-- Diary Photo MVP
-
-Planned：
-
+- Diary CRUD
+- Diary Detail
 - Diary Edit
+
+### Photos
+
+- Diary Photo
+- Photo Gallery
+- Photo Upload
+- Photo Delete
+
+### Ordered Food
+
 - Ordered Food
-- Diary Detail Polish
+- Food Chip
+- Timeline Chip Layout
+
+---
+
+# Group Progress
+
+## ✅ Completed
+
+- Settings MVP
+- Group Management
+- Group Detail
+- Header Group Switch
+- Current Group Integration
+- Create Group
+- Invite Member
+- Join Group
+
+## 🚧 In Progress
+
+
+
+## ⬜ Planned
+- Member List
+- Rename Group
+- Leave Group
+- Delete Group
 
 ---
 
 # Backlog
-
-## Group
-
-- Group Switch
-- Group Settings
-- Reference Location Settings
 
 ## Restaurant
 
@@ -111,13 +164,21 @@ Planned：
 - Decide（今天吃什麼）
 - Wish List
 - Nearby Restaurant
+- Notification
+- AI Recommendation
 
 ---
 
 # Notes
 
-Restaurant Module 已完成 MVP。
+Restaurant Module 已完成。
 
-除非修正 Bug，不再新增 Restaurant 功能。
+Diary Module 已完成 MVP。
 
-後續開發重心正式轉移至 Diary Module。
+目前正式進入 Group Management 開發階段。
+
+Current Group（profiles.current_group_id）已作為整個 App 的唯一 Group Source of Truth。
+
+Header 僅負責切換 Group。
+
+所有 Group 管理功能集中於 Settings。

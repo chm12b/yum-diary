@@ -13,6 +13,7 @@ import { listRestaurantRecords } from "@/src/services/record";
 import { listFirstRecordPhotoUrls } from "@/src/services/record-photo";
 import { listRecordFoods } from "@/src/services/record-food";
 import { getRestaurant } from "@/src/services/restaurant";
+import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 
 type RecordsPageProps = {
   restaurantId: string;
@@ -21,6 +22,7 @@ type RecordsPageProps = {
 type LoadStatus = "loading" | "ready" | "not-found" | "error";
 
 export default function RecordsPage({ restaurantId }: RecordsPageProps) {
+  const { revision } = useCurrentGroup();
   const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
   const [status, setStatus] = useState<LoadStatus>("loading");
 
@@ -70,7 +72,7 @@ export default function RecordsPage({ restaurantId }: RecordsPageProps) {
 
   useEffect(() => {
     void load();
-  }, [restaurantId]);
+  }, [restaurantId, revision]);
 
   if (status === "loading") {
     return (

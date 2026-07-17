@@ -8,6 +8,7 @@ import PasswordInput, {
   authInputClassName,
 } from "@/components/auth/PasswordInput";
 import { useAuth } from "@/src/hooks/useAuth";
+import { getSafeNextPath } from "@/src/lib/auth-next";
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -36,7 +37,9 @@ export default function RegisterForm() {
         return;
       }
 
-      router.replace("/onboarding");
+      const params = new URLSearchParams(window.location.search);
+      const next = getSafeNextPath(params.get("next"), "/onboarding");
+      router.replace(next.startsWith("/join/") ? next : "/onboarding");
     } finally {
       setSubmitting(false);
     }

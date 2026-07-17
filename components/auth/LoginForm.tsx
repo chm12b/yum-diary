@@ -9,6 +9,7 @@ import PasswordInput, {
   authInputClassName,
 } from "@/components/auth/PasswordInput";
 import { useAuth } from "@/src/hooks/useAuth";
+import { getSafeNextPath } from "@/src/lib/auth-next";
 import { homeAssets } from "@/src/lib/home-assets";
 
 export default function LoginForm() {
@@ -32,7 +33,9 @@ export default function LoginForm() {
         return;
       }
 
-      const path = await getPostLoginPath(data.user.id);
+      const defaultPath = await getPostLoginPath(data.user.id);
+      const params = new URLSearchParams(window.location.search);
+      const path = getSafeNextPath(params.get("next"), defaultPath);
       router.replace(path);
     } finally {
       setSubmitting(false);

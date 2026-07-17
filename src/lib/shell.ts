@@ -5,6 +5,8 @@ export function isHiddenNavPath(pathname: string) {
     pathname === "/onboarding" ||
     pathname.startsWith("/onboarding/") ||
     pathname === "/groups" ||
-    pathname.startsWith("/groups/")
+    pathname.startsWith("/groups/") ||
+    pathname === "/join" ||
+    pathname.startsWith("/join/")
   );
 }

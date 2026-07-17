@@ -17,11 +17,13 @@ import { LIST_CATEGORY_FILTERS } from "@/src/lib/restaurants/category";
 import type { Restaurant } from "@/src/lib/restaurant-types";
 import { getCurrentGroup } from "@/src/services/groups/group.service";
 import { listRestaurants } from "@/src/services/restaurant";
+import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 
 type LoadStatus = "loading" | "ready" | "error";
 
 export default function RestaurantListPage() {
   const router = useRouter();
+  const { revision } = useCurrentGroup();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategoryId, setActiveCategoryId] = useState("all");
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
@@ -53,7 +55,7 @@ export default function RestaurantListPage() {
 
   useEffect(() => {
     void loadRestaurants();
-  }, []);
+  }, [revision]);
 
   const filteredRestaurants = useMemo(
     () =>

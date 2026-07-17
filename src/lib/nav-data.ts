@@ -3,7 +3,7 @@ export type NavItemId =
   | "restaurants"
   | "add"
   | "favorites"
-  | "profile";
+  | "settings";
 
 export type NavItemData = {
   id: NavItemId;
@@ -38,9 +38,9 @@ export const navItems: NavItemData[] = [
     iconSrc: "/home/nav-favorites.png",
   },
   {
-    id: "profile",
-    label: "我的",
-    href: "/profile",
+    id: "settings",
+    label: "設定",
+    href: "/settings",
     iconSrc: "/home/nav-profile.png",
   },
 ];

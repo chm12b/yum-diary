@@ -12,6 +12,7 @@ import {
   listRestaurants,
   type RestaurantRow,
 } from "@/src/services/restaurants/restaurant.service";
+import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 
 type HomeStatus = "loading" | "error" | "empty" | "hasData";
 
@@ -31,6 +32,7 @@ function HomeContentSkeleton() {
 }
 
 export default function HomePage() {
+  const { revision } = useCurrentGroup();
   const [status, setStatus] = useState<HomeStatus>("loading");
   const [restaurants, setRestaurants] = useState<RestaurantRow[]>([]);
 
@@ -51,7 +53,7 @@ export default function HomePage() {
 
   useEffect(() => {
     void loadRestaurants();
-  }, []);
+  }, [revision]);
 
   return (
     <div className="home-grid-bg min-h-full">
