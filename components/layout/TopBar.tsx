@@ -14,8 +14,6 @@ export default function TopBar() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
-  const label = currentGroup?.name ?? "我的群組";
-
   useEffect(() => {
     return () => {
       if (toastTimerRef.current != null) {
@@ -57,7 +55,7 @@ export default function TopBar() {
         <div className="relative justify-self-center">
           <button
             type="button"
-            aria-label={`目前群組：${label}`}
+            aria-label={`目前群組：${currentGroup?.name ?? "尚未加入群組"}`}
             aria-haspopup="listbox"
             aria-expanded={open}
             onClick={() => setOpen((value) => !value)}
@@ -69,7 +67,7 @@ export default function TopBar() {
               🏠
             </span>
             <span className="max-w-[9.5rem] truncate font-mono text-base">
-              {label}
+              {currentGroup?.name ?? "尚未加入群組"}
             </span>
             <ChevronDown
               className={`h-4 w-4 shrink-0 text-text-secondary transition-transform duration-150 ${

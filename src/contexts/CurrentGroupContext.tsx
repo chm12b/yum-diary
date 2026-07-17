@@ -23,6 +23,8 @@ export type CurrentGroupContextValue = {
   revision: number;
   loading: boolean;
   refresh: () => Promise<void>;
+  /** Refresh current group and bump revision (Home / Restaurant / Diary). */
+  syncAfterGroupChange: () => Promise<void>;
   switchGroup: (groupId: string) => Promise<{ ok: boolean }>;
 };
 
@@ -50,6 +52,20 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
     const { data } = await getCurrentGroup();
     setCurrentGroup(data);
     setLoading(false);
+  }, [user]);
+
+  const syncAfterGroupChange = useCallback(async () => {
+    if (!user) {
+      setCurrentGroup(null);
+      setLoading(false);
+      setRevision((value) => value + 1);
+      return;
+    }
+
+    const { data } = await getCurrentGroup();
+    setCurrentGroup(data);
+    setLoading(false);
+    setRevision((value) => value + 1);
   }, [user]);
 
   useEffect(() => {
@@ -95,9 +111,18 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
       revision,
       loading: authLoading || loading,
       refresh,
+      syncAfterGroupChange,
       switchGroup,
     }),
-    [authLoading, currentGroup, loading, refresh, revision, switchGroup],
+    [
+      authLoading,
+      currentGroup,
+      loading,
+      refresh,
+      syncAfterGroupChange,
+      revision,
+      switchGroup,
+    ],
   );
 
   return (

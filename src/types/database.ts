@@ -325,6 +325,12 @@ export type Database = {
         };
         Returns: string;
       };
+      leave_group: {
+        Args: {
+          p_group_id: string;
+        };
+        Returns: string | null;
+      };
     };
     Enums: {
       [_ in never]: never;

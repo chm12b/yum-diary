@@ -37,6 +37,11 @@ export type GroupDetail = {
   inviteCode: string;
 };
 
+export type UpdateGroupNameInput = {
+  groupId: string;
+  name: string;
+};
+
 export type GroupMemberListItem = {
   profileId: string;
   displayName: string;
@@ -123,6 +128,94 @@ export async function getGroupDetail(
       memberCount: count ?? 0,
       isOwner: group.owner_id === user.id,
       inviteCode: group.invite_code,
+    },
+    error: null,
+  };
+}
+
+/**
+ * Rename a group. RLS allows only the group owner to update.
+ */
+export async function updateGroupName({
+  groupId,
+  name,
+}: UpdateGroupNameInput): Promise<GroupResult<GroupDetail | null>> {
+  const id = groupId.trim();
+  const nextName = name.trim();
+
+  if (!id || !nextName) {
+    return { data: null, error: null };
+  }
+
+  if (nextName.length > 100) {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Group name too long",
+        details: "",
+        hint: "",
+        code: "22001",
+      } as PostgrestError,
+    };
+  }
+
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    return { data: null, error: userError };
+  }
+
+  if (!user) {
+    return { data: null, error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("groups")
+    .update({ name: nextName })
+    .eq("id", id)
+    .eq("owner_id", user.id)
+    .select("id, name, owner_id, invite_code")
+    .maybeSingle();
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  if (!data) {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Group not found or not allowed",
+        details: "",
+        hint: "",
+        code: "PGRST116",
+      } as PostgrestError,
+    };
+  }
+
+  const { count, error: countError } = await supabase
+    .from("group_members")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", id);
+
+  if (countError) {
+    return { data: null, error: countError };
+  }
+
+  return {
+    data: {
+      id: data.id,
+      name: data.name,
+      memberCount: count ?? 0,
+      isOwner: data.owner_id === user.id,
+      inviteCode: data.invite_code,
     },
     error: null,
   };
@@ -400,4 +493,91 @@ export async function joinGroupByInviteCode(
   }
 
   return { data: data ?? null, error: null };
+}
+
+export type LeaveGroupData = {
+  leftGroupName: string;
+  nextGroupId: string | null;
+};
+
+/**
+ * Leave a group as a non-owner member.
+ * Deletes the caller's group_members row and updates current_group_id.
+ * Returns the next current group id (null when none remain).
+ */
+export async function leaveGroup(
+  groupId: string,
+): Promise<GroupResult<LeaveGroupData | null>> {
+  const id = groupId.trim();
+  if (!id) {
+    return { data: null, error: null };
+  }
+
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    return { data: null, error: userError };
+  }
+
+  if (!user) {
+    return { data: null, error: null };
+  }
+
+  const { data: group, error: groupError } = await supabase
+    .from("groups")
+    .select("id, name, owner_id")
+    .eq("id", id)
+    .eq("is_archived", false)
+    .maybeSingle();
+
+  if (groupError) {
+    return { data: null, error: groupError };
+  }
+
+  if (!group) {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Group not found",
+        details: "",
+        hint: "",
+        code: "PGRST116",
+      } as PostgrestError,
+    };
+  }
+
+  if (group.owner_id === user.id) {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Owner cannot leave group",
+        details: "",
+        hint: "",
+        code: "42501",
+      } as PostgrestError,
+    };
+  }
+
+  const { data: nextGroupId, error } = await supabase.rpc("leave_group", {
+    p_group_id: id,
+  });
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  return {
+    data: {
+      leftGroupName: group.name,
+      nextGroupId: nextGroupId ?? null,
+    },
+    error: null,
+  };
 }

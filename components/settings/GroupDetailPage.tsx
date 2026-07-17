@@ -1,11 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 
+import LeaveGroupDialog from "@/components/settings/LeaveGroupDialog";
+import RenameGroupSheet from "@/components/settings/RenameGroupSheet";
+import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 import {
   getGroupDetail,
+  leaveGroup,
+  updateGroupName,
   type GroupDetail,
 } from "@/src/services/groups/group.service";
 
@@ -52,9 +58,15 @@ function SettingsRow({ emoji, label, href }: SettingsRowProps) {
 }
 
 export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
+  const router = useRouter();
+  const { refresh, syncAfterGroupChange } = useCurrentGroup();
   const [group, setGroup] = useState<GroupDetail | null>(null);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [toast, setToast] = useState<string | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const toastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -95,8 +107,8 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
     void load();
   }, [groupId]);
 
-  function showComingSoon() {
-    setToast("Coming Soon");
+  function showToast(message: string) {
+    setToast(message);
     if (toastTimerRef.current != null) {
       window.clearTimeout(toastTimerRef.current);
     }
@@ -104,6 +116,69 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
       setToast(null);
       toastTimerRef.current = null;
     }, TOAST_MS);
+  }
+
+  function showComingSoon() {
+    showToast("Coming Soon");
+  }
+
+  async function handleRenameSave(nextName: string) {
+    if (!group || renaming) {
+      return;
+    }
+
+    setRenaming(true);
+
+    try {
+      const { data, error } = await updateGroupName({
+        groupId: group.id,
+        name: nextName,
+      });
+
+      if (error || !data) {
+        showToast("更新失敗，請稍後再試。");
+        return;
+      }
+
+      setGroup(data);
+      setRenameOpen(false);
+      await refresh();
+      showToast("群組名稱已更新。");
+    } catch {
+      showToast("更新失敗，請稍後再試。");
+    } finally {
+      setRenaming(false);
+    }
+  }
+
+  async function handleLeaveConfirm() {
+    if (!group || leaving) {
+      return;
+    }
+
+    setLeaving(true);
+
+    try {
+      const { data, error } = await leaveGroup(group.id);
+
+      if (error || !data) {
+        showToast("離開群組失敗，請稍後再試。");
+        return;
+      }
+
+      const leftName = data.leftGroupName;
+      setLeaveOpen(false);
+      await syncAfterGroupChange();
+      showToast(`已離開${leftName}。`);
+
+      window.setTimeout(() => {
+        router.replace("/");
+      }, 900);
+    } catch {
+      showToast("離開群組失敗，請稍後再試。");
+    } finally {
+      setLeaving(false);
+    }
   }
 
   if (status === "loading") {
@@ -227,29 +302,75 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
             </>
           ) : null}
           <RowDivider />
-          <SettingsRow
-            emoji="✏️"
-            label="修改群組名稱"
-            href={`${basePath}/edit`}
-          />
-          <RowDivider />
           {group.isOwner ? (
             <button
               type="button"
-              onClick={showComingSoon}
+              onClick={() => setRenameOpen(true)}
               className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-cream-bg/40 active:bg-cream-bg/60"
             >
               <span className="text-base leading-none" aria-hidden>
-                🗑
+                ✏️
               </span>
-              <span className="min-w-0 flex-1 text-base font-medium text-status-closed-fg">
-                解散群組
+              <span className="min-w-0 flex-1 text-base font-medium text-deep-brown">
+                修改群組名稱
               </span>
+              <ChevronRight
+                className="h-5 w-5 shrink-0 text-cocoa"
+                strokeWidth={2}
+                aria-hidden
+              />
             </button>
+          ) : (
+            <div className="px-4 py-4">
+              <div className="flex items-center gap-3 opacity-50">
+                <span className="text-base leading-none" aria-hidden>
+                  ✏️
+                </span>
+                <span className="min-w-0 flex-1 text-base font-medium text-deep-brown">
+                  修改群組名稱
+                </span>
+              </div>
+              <p className="mt-2 pl-8 text-xs text-text-secondary">
+                只有群組建立者可以修改群組名稱。
+              </p>
+            </div>
+          )}
+          <RowDivider />
+          {group.isOwner ? (
+            <>
+              <button
+                type="button"
+                onClick={showComingSoon}
+                className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-cream-bg/40 active:bg-cream-bg/60"
+              >
+                <span className="text-base leading-none" aria-hidden>
+                  🗑
+                </span>
+                <span className="min-w-0 flex-1 text-base font-medium text-status-closed-fg">
+                  解散群組
+                </span>
+              </button>
+              <RowDivider />
+              <div className="px-4 py-4">
+                <div className="flex items-center gap-3 opacity-50">
+                  <span className="text-base leading-none" aria-hidden>
+                    🚪
+                  </span>
+                  <span className="min-w-0 flex-1 text-base font-medium text-status-closed-fg">
+                    離開群組
+                  </span>
+                </div>
+                <p className="mt-2 pl-8 text-xs leading-relaxed text-text-secondary">
+                  群組建立者無法直接離開群組。
+                  <br />
+                  若不再需要此群組，請使用「解散群組」。
+                </p>
+              </div>
+            </>
           ) : (
             <button
               type="button"
-              onClick={showComingSoon}
+              onClick={() => setLeaveOpen(true)}
               className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-cream-bg/40 active:bg-cream-bg/60"
             >
               <span className="text-base leading-none" aria-hidden>
@@ -262,6 +383,30 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
           )}
         </div>
       </section>
+
+      <RenameGroupSheet
+        open={renameOpen}
+        currentName={group.name}
+        submitting={renaming}
+        onClose={() => {
+          if (!renaming) {
+            setRenameOpen(false);
+          }
+        }}
+        onSave={handleRenameSave}
+      />
+
+      <LeaveGroupDialog
+        open={leaveOpen}
+        groupName={group.name}
+        submitting={leaving}
+        onClose={() => {
+          if (!leaving) {
+            setLeaveOpen(false);
+          }
+        }}
+        onConfirm={handleLeaveConfirm}
+      />
 
       {toast ? (
         <div
