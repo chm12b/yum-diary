@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 type DiaryDetailHeaderProps = {
   restaurantId: string;
   recordId: string;
+  /** Only the record author may edit / delete. */
+  canEdit: boolean;
 };
 
 const iconButtonClass =
@@ -15,6 +17,7 @@ const iconButtonClass =
 export default function DiaryDetailHeader({
   restaurantId,
   recordId,
+  canEdit,
 }: DiaryDetailHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -51,37 +54,41 @@ export default function DiaryDetailHeader({
       <h1 className="text-center font-display text-base font-bold text-deep-brown">
         用餐紀錄
       </h1>
-      <div className="relative justify-self-end" ref={menuRef}>
-        <button
-          type="button"
-          aria-label="更多"
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          onClick={() => setMenuOpen((open) => !open)}
-          className={iconButtonClass}
-        >
-          <Ellipsis className="h-5 w-5" strokeWidth={2} />
-        </button>
-        {menuOpen ? (
-          <div
-            role="menu"
-            className="absolute top-11 right-0 z-30 min-w-[11rem] overflow-hidden rounded-2xl border border-border bg-rice-white py-1 shadow-card"
+      {canEdit ? (
+        <div className="relative justify-self-end" ref={menuRef}>
+          <button
+            type="button"
+            aria-label="更多"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            onClick={() => setMenuOpen((open) => !open)}
+            className={iconButtonClass}
           >
-            <Link
-              href={`/records/${recordId}/edit`}
-              role="menuitem"
-              onClick={() => setMenuOpen(false)}
-              className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-deep-brown transition-colors hover:bg-cream-bg"
+            <Ellipsis className="h-5 w-5" strokeWidth={2} />
+          </button>
+          {menuOpen ? (
+            <div
+              role="menu"
+              className="absolute top-11 right-0 z-30 min-w-[11rem] overflow-hidden rounded-2xl border border-border bg-rice-white py-1 shadow-card"
             >
-              <Pencil
-                className="h-4 w-4 shrink-0 text-caramel"
-                strokeWidth={2}
-              />
-              編輯紀錄
-            </Link>
-          </div>
-        ) : null}
-      </div>
+              <Link
+                href={`/records/${recordId}/edit`}
+                role="menuitem"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 px-3.5 py-2.5 text-sm text-deep-brown transition-colors hover:bg-cream-bg"
+              >
+                <Pencil
+                  className="h-4 w-4 shrink-0 text-caramel"
+                  strokeWidth={2}
+                />
+                編輯紀錄
+              </Link>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <span aria-hidden />
+      )}
     </header>
   );
 }

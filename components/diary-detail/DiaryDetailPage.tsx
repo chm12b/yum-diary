@@ -7,6 +7,7 @@ import DiaryDetailContent from "@/components/diary-detail/DiaryDetailContent";
 import DiaryDetailHeader from "@/components/diary-detail/DiaryDetailHeader";
 import OrderedFoodSection from "@/components/diary-detail/OrderedFoodSection";
 import RecordPhotoSection from "@/components/diary-detail/RecordPhotoSection";
+import { useAuth } from "@/src/hooks/useAuth";
 import { getRecord, type DiningRecord } from "@/src/services/record";
 import { listRecordFoods, type RecordFood } from "@/src/services/record-food";
 
@@ -17,6 +18,7 @@ type DiaryDetailPageProps = {
 type LoadStatus = "loading" | "ready" | "not-found" | "error";
 
 export default function DiaryDetailPage({ recordId }: DiaryDetailPageProps) {
+  const { user } = useAuth();
   const [record, setRecord] = useState<DiningRecord | null>(null);
   const [foods, setFoods] = useState<RecordFood[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
@@ -108,6 +110,7 @@ export default function DiaryDetailPage({ recordId }: DiaryDetailPageProps) {
       <DiaryDetailHeader
         restaurantId={record.restaurant_id}
         recordId={record.id}
+        canEdit={Boolean(user && record.user_id === user.id)}
       />
       <DiaryDetailContent record={record} />
       <OrderedFoodSection foods={foods} />

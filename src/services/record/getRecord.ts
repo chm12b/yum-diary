@@ -3,8 +3,8 @@ import { createClient } from "@/src/lib/supabase/client";
 import type { DiningRecord } from "./types";
 
 /**
- * Fetch one dining record owned by the signed-in user.
- * Returns null when unauthenticated, not found, or not owned by the user.
+ * Fetch one dining record visible to the signed-in user (same-group read via RLS).
+ * Returns null when unauthenticated or not found / not accessible.
  */
 export async function getRecord(
   recordId: string,
@@ -33,7 +33,6 @@ export async function getRecord(
     .from("records")
     .select("*")
     .eq("id", id)
-    .eq("user_id", user.id)
     .maybeSingle();
 
   if (error) {

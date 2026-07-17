@@ -9,6 +9,7 @@ import AddDiaryFooter from "@/components/add-diary/AddDiaryFooter";
 import AddDiaryFormCard from "@/components/add-diary/AddDiaryFormCard";
 import AddDiaryHeader from "@/components/add-diary/AddDiaryHeader";
 import RecordPhotoManagerSection from "@/components/add-diary/RecordPhotoManagerSection";
+import { useAuth } from "@/src/hooks/useAuth";
 import {
   createRecord,
   getRecord,
@@ -44,6 +45,7 @@ function todayIsoDate(): string {
 
 export default function AddDiaryPage(props: AddDiaryPageProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const isEdit = props.mode === "edit";
   const recordId = isEdit ? props.recordId : null;
   const restaurantId = !isEdit ? props.restaurantId : null;
@@ -93,7 +95,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
           return;
         }
 
-        if (!row) {
+        if (!row || !user || row.user_id !== user.id) {
           setLoadStatus("not-found");
           return;
         }
@@ -117,7 +119,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [isEdit, recordId, loadAttempt]);
+  }, [isEdit, recordId, loadAttempt, user]);
 
   function showToast(type: "success" | "error", message: string) {
     setToast({ type, message });

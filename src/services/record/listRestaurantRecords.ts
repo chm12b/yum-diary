@@ -3,8 +3,8 @@ import { createClient } from "@/src/lib/supabase/client";
 import type { DiningRecord } from "./types";
 
 /**
- * List the signed-in user's dining records for a restaurant.
- * Ordered by visit_date DESC, then created_at DESC.
+ * List dining records for a restaurant visible to the signed-in user.
+ * Same-group members can read (RLS); ordered by visit_date DESC, then created_at DESC.
  * Returns [] when unauthenticated.
  */
 export async function listRestaurantRecords(
@@ -34,7 +34,6 @@ export async function listRestaurantRecords(
     .from("records")
     .select("*")
     .eq("restaurant_id", id)
-    .eq("user_id", user.id)
     .order("visit_date", { ascending: false })
     .order("created_at", { ascending: false });
 
