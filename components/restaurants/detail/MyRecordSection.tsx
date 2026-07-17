@@ -96,7 +96,7 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
             ) : null}
           </Link>
         ) : (
-          <div className="px-4 pt-5 pb-3">
+          <div className="min-h-[7rem] px-4 pt-5 pb-3">
             <p className="text-sm text-cocoa/60">尚未紀錄</p>
           </div>
         )}

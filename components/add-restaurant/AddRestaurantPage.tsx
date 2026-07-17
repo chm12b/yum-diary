@@ -232,7 +232,7 @@ export default function AddRestaurantPage({
       setWeeklyHours(detail.weeklyHours);
     }
 
-    setGooglePhotoName((prev) => prev ?? detail.photo);
+    setGooglePhotoName(detail.photo);
   }
 
   async function handleSelectPlaceId(placeId: string) {
@@ -342,6 +342,24 @@ export default function AddRestaurantPage({
           file: pendingCoverFile,
         });
         setPendingCoverFile(null);
+      } else if (googlePhotoName) {
+        // Persist Google preview photo into Storage + restaurant_cover_path.
+        // Failure is non-fatal — the restaurant row is already created.
+        try {
+          const photoResponse = await fetch(
+            `/api/google/places/photo?name=${encodeURIComponent(googlePhotoName)}`,
+          );
+
+          if (photoResponse.ok) {
+            const blob = await photoResponse.blob();
+            await uploadRestaurantCover({
+              restaurantId: created.id,
+              file: blob,
+            });
+          }
+        } catch {
+          // Keep create success; cover can be uploaded later from edit.
+        }
       }
 
       showToast("success", "餐廳已加入收藏！");

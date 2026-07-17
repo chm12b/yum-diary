@@ -51,6 +51,7 @@ function FieldLabel({
   optional,
   hint,
   trailing,
+  compact,
 }: {
   icon: typeof Soup;
   label: string;
@@ -58,13 +59,30 @@ function FieldLabel({
   optional?: boolean;
   hint?: string;
   trailing?: ReactNode;
+  /** Tighter label for dual-column mobile layouts. */
+  compact?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <Icon className="h-4 w-4 shrink-0 text-caramel" strokeWidth={2} />
-      <span className="text-sm font-medium text-deep-brown">{label}</span>
+    <div className={`flex items-center ${compact ? "gap-1" : "gap-2"}`}>
+      <Icon
+        className={`shrink-0 text-caramel ${compact ? "h-3.5 w-3.5" : "h-4 w-4"}`}
+        strokeWidth={2}
+      />
+      <span
+        className={`font-medium text-deep-brown ${compact ? "text-xs" : "text-sm"}`}
+      >
+        {label}
+      </span>
       {required ? <RequiredTag /> : null}
-      {optional ? <OptionalTag /> : null}
+      {optional ? (
+        compact ? (
+          <span className="text-[9px] font-medium text-text-secondary">
+            選填
+          </span>
+        ) : (
+          <OptionalTag />
+        )
+      ) : null}
       {hint ? (
         <span className="text-[10px] text-text-secondary">{hint}</span>
       ) : null}
@@ -256,12 +274,13 @@ export default function AddRestaurantFormCard({
         <FormDivider />
 
         {/* Hours + closed days — side by side */}
-        <div className="grid grid-cols-2 gap-3 px-4 py-3.5">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 px-4 py-3.5">
           <div className="min-w-0 space-y-2.5">
             <FieldLabel
               icon={Clock}
               label="營業時間"
               optional
+              compact
               trailing={
                 showSpecialHoursWarning ? (
                   <button
@@ -289,14 +308,16 @@ export default function AddRestaurantFormCard({
                     onChange={(close) => onPeriodChange(period.id, { close })}
                     aria-label={`時段 ${index + 1} 結束時間`}
                   />
-                  <button
-                    type="button"
-                    aria-label={`刪除時段 ${index + 1}`}
-                    onClick={() => onRemovePeriod(period.id)}
-                    className="ml-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sakura-pink/70 text-deep-brown"
-                  >
-                    <Minus className="h-3 w-3" strokeWidth={2.5} />
-                  </button>
+                  {periods.length > 1 ? (
+                    <button
+                      type="button"
+                      aria-label={`刪除時段 ${index + 1}`}
+                      onClick={() => onRemovePeriod(period.id)}
+                      className="ml-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sakura-pink/70 text-deep-brown"
+                    >
+                      <Minus className="h-3 w-3" strokeWidth={2.5} />
+                    </button>
+                  ) : null}
                 </div>
               ))}
               {canAddPeriod ? (
@@ -312,8 +333,8 @@ export default function AddRestaurantFormCard({
             </div>
           </div>
 
-          <div className="min-w-0 space-y-2.5">
-            <FieldLabel icon={CalendarOff} label="公休日" optional />
+          <div className="min-w-0 space-y-2.5 pl-1">
+            <FieldLabel icon={CalendarOff} label="公休日" optional compact />
             <div className="flex flex-wrap gap-1.5">
               {WEEKDAYS.map((day) => {
                 const active = closedDays.includes(day);
@@ -323,7 +344,7 @@ export default function AddRestaurantFormCard({
                     type="button"
                     aria-pressed={active}
                     onClick={() => onToggleDay(day)}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-medium transition-colors ${
+                    className={`flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-medium transition-colors ${
                       active
                         ? "border-caramel bg-sakura-pink text-deep-brown"
                         : "border-border bg-cream-bg/60 text-cocoa"
