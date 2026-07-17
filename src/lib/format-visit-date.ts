@@ -8,3 +8,13 @@ export function formatVisitDate(dateStr: string): string {
 
   return `${y} / ${m} / ${d} (${w})`;
 }
+
+/** Compact date for timeline author row, e.g. 2026/07/17 */
+export function formatCompactVisitDate(dateStr: string): string {
+  const date = new Date(`${dateStr}T00:00:00`);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+
+  return `${y}/${m}/${d}`;
+}

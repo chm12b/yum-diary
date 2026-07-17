@@ -13,6 +13,7 @@ import { mapRestaurantRecordToDetail } from "@/src/lib/map-restaurant-detail";
 import type { GeoPoint } from "@/src/lib/restaurants/distance";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 import { getCurrentGroup } from "@/src/services/groups/group.service";
+import { listProfileDisplayNames } from "@/src/services/profile/profile.service";
 import { listRestaurantRecords } from "@/src/services/record";
 import { listFirstRecordPhotoUrls } from "@/src/services/record-photo";
 import {
@@ -76,6 +77,9 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       const firstPhotoUrls = await listFirstRecordPhotoUrls(
         diningRecords.map((record) => record.id),
       );
+      const authorNames = await listProfileDisplayNames(
+        diningRecords.map((record) => record.user_id),
+      );
 
       referenceRef.current = groupResult.data
         ? {
@@ -96,6 +100,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
           diningRecords,
           referenceRef.current,
           firstPhotoUrls,
+          authorNames,
         ),
       );
       setStatus("ready");
@@ -120,12 +125,16 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       const firstPhotoUrls = await listFirstRecordPhotoUrls(
         diningRecords.map((record) => record.id),
       );
+      const authorNames = await listProfileDisplayNames(
+        diningRecords.map((record) => record.user_id),
+      );
       setRestaurant(
         mapRestaurantRecordToDetail(
           updated,
           diningRecords,
           referenceRef.current,
           firstPhotoUrls,
+          authorNames,
         ),
       );
       showToast("success", "✨ 已同步最新 Google 資料");

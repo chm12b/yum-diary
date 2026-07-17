@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import FoodChipsRow from "@/components/records/FoodChipsRow";
 import RecordStarRating from "@/components/records/RecordStarRating";
-import { formatVisitDate } from "@/src/lib/format-visit-date";
+import { formatCompactVisitDate } from "@/src/lib/format-visit-date";
 import { homeAssets } from "@/src/lib/home-assets";
 import type { DiaryRecord } from "@/src/lib/restaurant-types";
 
@@ -36,9 +36,12 @@ export default function DiaryCard({ record }: DiaryCardProps) {
       <article className="relative overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
         <div className="px-4 pt-4 pb-4">
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-deep-brown ${dateTagColor}`}
+            className={`inline-flex max-w-full items-center gap-1 truncate rounded-full px-2.5 py-1 text-xs font-medium text-deep-brown ${dateTagColor}`}
           >
-            📅 {formatVisitDate(record.visitDate)}
+            <span className="shrink-0">📅 {formatCompactVisitDate(record.visitDate)}</span>
+            <span className="min-w-0 truncate font-normal text-text-secondary">
+              · {record.authorName}
+            </span>
           </span>
 
           {hasPhoto ? (

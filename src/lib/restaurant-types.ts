@@ -60,6 +60,8 @@ export type DiaryRecord = {
   order: string;
   notes: string;
   photo: string | null;
+  /** Author display name from profiles; fallback 「未知成員」. */
+  authorName: string;
   /** Ordered food names for timeline chips (display_order ASC). */
   foods?: string[];
   dateTagColor?: "pink" | "yellow" | "green";

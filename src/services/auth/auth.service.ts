@@ -85,3 +85,33 @@ export async function getUser(): Promise<AuthResult<UserData>> {
 
   return { data, error };
 }
+
+export type ResetPasswordForEmailInput = {
+  email: string;
+  redirectTo: string;
+};
+
+export async function resetPasswordForEmail({
+  email,
+  redirectTo,
+}: ResetPasswordForEmailInput): Promise<AuthResult<null>> {
+  const supabase = createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+
+  return { data: null, error };
+}
+
+export type UpdatePasswordInput = {
+  password: string;
+};
+
+export async function updatePassword({
+  password,
+}: UpdatePasswordInput): Promise<AuthResult<UserData>> {
+  const supabase = createClient();
+  const { data, error } = await supabase.auth.updateUser({ password });
+
+  return { data, error };
+}

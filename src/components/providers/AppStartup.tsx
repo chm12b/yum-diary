@@ -10,6 +10,10 @@ function isJoinPath(pathname: string) {
   return pathname === "/join" || pathname.startsWith("/join/");
 }
 
+function isPasswordResetPath(pathname: string) {
+  return pathname === "/forgot-password" || pathname === "/reset-password";
+}
+
 export default function AppStartup() {
   const router = useRouter();
   const pathname = usePathname();
@@ -30,13 +34,16 @@ export default function AppStartup() {
           return;
         }
 
-        if (pathname !== "/auth") {
+        if (
+          pathname !== "/auth" &&
+          !isPasswordResetPath(pathname)
+        ) {
           router.replace("/auth");
         }
         return;
       }
 
-      if (isJoinPath(pathname)) {
+      if (isJoinPath(pathname) || isPasswordResetPath(pathname)) {
         return;
       }
 

@@ -55,7 +55,7 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
         />
         <SectionHeading
           iconSrc={homeAssets.storeMyRec}
-          title="我的紀錄"
+          title="美食日記"
           iconSize={50}
           className="flex items-center gap-2"
         />
@@ -115,7 +115,7 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
             href={`/restaurants/${restaurant.id}/records`}
             className="flex w-full items-center justify-center gap-1 border-t border-border py-3 text-sm text-cocoa transition-colors hover:text-deep-brown"
           >
-            查看全部紀錄 ({totalRecords})
+            查看全部美食日記 ({totalRecords})
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </Link>
         ) : (

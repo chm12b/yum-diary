@@ -11,6 +11,42 @@ export type CurrentGroupIdData = {
   current_group_id: string | null;
 };
 
+const UNKNOWN_MEMBER_LABEL = "未知成員";
+
+/**
+ * Display name for the signed-in user.
+ * Returns null when unauthenticated or display_name is blank.
+ */
+export async function getMyDisplayName(): Promise<string | null> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  const trimmed = data?.display_name?.trim() ?? "";
+  return trimmed || null;
+}
+
 export async function getCurrentGroupId(
   userId: string,
 ): Promise<ProfileResult<CurrentGroupIdData | null>> {
@@ -30,6 +66,44 @@ export async function getCurrentGroupId(
     data: data as CurrentGroupIdData,
     error: null,
   };
+}
+
+/**
+ * Resolve display names for profile ids (same-group readable via RLS).
+ * Missing / blank display_name → 「未知成員」. Never returns user ids.
+ */
+export async function listProfileDisplayNames(
+  profileIds: string[],
+): Promise<Map<string, string>> {
+  const uniqueIds = [
+    ...new Set(profileIds.map((id) => id.trim()).filter(Boolean)),
+  ];
+  const names = new Map<string, string>();
+
+  if (uniqueIds.length === 0) {
+    return names;
+  }
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, display_name")
+    .in("id", uniqueIds);
+
+  if (error) {
+    throw error;
+  }
+
+  for (const id of uniqueIds) {
+    names.set(id, UNKNOWN_MEMBER_LABEL);
+  }
+
+  for (const row of data ?? []) {
+    const trimmed = row.display_name?.trim() ?? "";
+    names.set(row.id, trimmed || UNKNOWN_MEMBER_LABEL);
+  }
+
+  return names;
 }
 
 /**

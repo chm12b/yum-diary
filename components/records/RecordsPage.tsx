@@ -12,6 +12,7 @@ import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 import { listRestaurantRecords } from "@/src/services/record";
 import { listFirstRecordPhotoUrls } from "@/src/services/record-photo";
 import { listRecordFoods } from "@/src/services/record-food";
+import { listProfileDisplayNames } from "@/src/services/profile/profile.service";
 import { getRestaurant } from "@/src/services/restaurant";
 import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 
@@ -38,6 +39,9 @@ export default function RecordsPage({ restaurantId }: RecordsPageProps) {
       const firstPhotoUrls = await listFirstRecordPhotoUrls(
         diningRecords.map((record) => record.id),
       );
+      const authorNames = await listProfileDisplayNames(
+        diningRecords.map((record) => record.user_id),
+      );
 
       if (!row) {
         setRestaurant(null);
@@ -50,6 +54,7 @@ export default function RecordsPage({ restaurantId }: RecordsPageProps) {
         diningRecords,
         null,
         firstPhotoUrls,
+        authorNames,
       );
 
       const recordsWithFoods = await Promise.all(

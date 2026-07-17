@@ -2,6 +2,7 @@
 
 import { Mail } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -78,12 +79,12 @@ export default function LoginForm() {
       />
 
       <div className="flex justify-end">
-        <button
-          type="button"
+        <Link
+          href="/forgot-password"
           className="-mt-3 text-xs text-text-secondary transition-colors hover:text-deep-brown"
         >
           忘記密碼？
-        </button>
+        </Link>
       </div>
 
       {error ? (

@@ -1,5 +1,5 @@
 /**
- * Public app origin for invite links and share URLs.
+ * Public app origin for invite links, share URLs, and auth redirects.
  * Prefer NEXT_PUBLIC_APP_URL; fall back to window.location.origin in the browser.
  */
 export function getAppUrl(): string {
@@ -23,4 +23,13 @@ export function buildInviteUrl(inviteCode: string): string {
     return `/join/${code}`;
   }
   return `${base}/join/${code}`;
+}
+
+/** Build password-reset redirect URL: {APP_URL}/reset-password */
+export function buildResetPasswordUrl(): string {
+  const base = getAppUrl();
+  if (!base) {
+    return "/reset-password";
+  }
+  return `${base}/reset-password`;
 }

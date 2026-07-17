@@ -12,9 +12,20 @@ import type { DiaryRecord, RestaurantDetail } from "@/src/lib/restaurant-types";
 import type { DiningRecord } from "@/src/services/record";
 import type { RestaurantRecord } from "@/src/services/restaurant";
 
+const UNKNOWN_MEMBER_LABEL = "未知成員";
+
+function resolveAuthorName(
+  authorNames: Map<string, string>,
+  userId: string,
+): string {
+  const name = authorNames.get(userId)?.trim() ?? "";
+  return name || UNKNOWN_MEMBER_LABEL;
+}
+
 function mapDiningRecordToDiary(
   row: DiningRecord,
   photoUrl: string | null = null,
+  authorName: string = UNKNOWN_MEMBER_LABEL,
 ): DiaryRecord {
   return {
     id: row.id,
@@ -23,6 +34,7 @@ function mapDiningRecordToDiary(
     order: "",
     notes: row.notes,
     photo: photoUrl,
+    authorName,
   };
 }
 
@@ -35,11 +47,16 @@ export function mapRestaurantRecordToDetail(
   diningRecords: DiningRecord[] = [],
   reference: GeoPoint | null = null,
   firstPhotoUrls: Map<string, string> = new Map(),
+  authorNames: Map<string, string> = new Map(),
 ): RestaurantDetail {
   const priceMin = row.price_min ?? 0;
   const priceMax = row.price_max ?? priceMin;
   const records = diningRecords.map((record) =>
-    mapDiningRecordToDiary(record, firstPhotoUrls.get(record.id) ?? null),
+    mapDiningRecordToDiary(
+      record,
+      firstPhotoUrls.get(record.id) ?? null,
+      resolveAuthorName(authorNames, record.user_id),
+    ),
   );
   const latest = records[0];
   const coverPath = row.restaurant_cover_path;

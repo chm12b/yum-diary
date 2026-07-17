@@ -18,6 +18,7 @@ const SYNC_EVENTS = new Set<AuthChangeEvent>([
   "SIGNED_OUT",
   "TOKEN_REFRESHED",
   "USER_UPDATED",
+  "PASSWORD_RECOVERY",
 ]);
 
 export type PostLoginPath = "/" | "/onboarding";
