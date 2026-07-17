@@ -22,6 +22,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
+  const [sentEmail, setSentEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<PageStatus>("form");
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +68,7 @@ export default function ForgotPasswordPage() {
         return;
       }
 
+      setSentEmail(trimmed);
       setStatus("success");
     } catch {
       showToast("error", "寄送失敗，請稍後再試。");
@@ -86,11 +88,15 @@ export default function ForgotPasswordPage() {
             重設密碼信已寄出！
           </h1>
           <p className="mt-3 text-sm leading-relaxed text-cocoa">
-            請到你的 Email 查看信件。
+            我們已將重設密碼信寄到：
+          </p>
+          <p className="mt-1 text-sm font-medium break-all text-deep-brown">
+            {sentEmail}
+          </p>
+          <p className="mt-3 text-sm leading-relaxed text-cocoa">
+            請到信箱查看，
             <br />
-            如果沒有收到，
-            <br />
-            也可以檢查垃圾郵件。
+            如果沒有收到，也可以檢查垃圾郵件。
           </p>
           <Link
             href="/auth"
