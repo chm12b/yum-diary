@@ -14,6 +14,7 @@ import type { RestaurantRecord } from "@/src/services/restaurant";
 export function mapRestaurantRecordToListItem(
   row: RestaurantRecord,
   reference: GeoPoint | null = null,
+  isFavorite = false,
 ): Restaurant {
   const priceMin = row.price_min ?? 0;
   const priceMax = row.price_max ?? priceMin;
@@ -43,7 +44,7 @@ export function mapRestaurantRecordToListItem(
     priceMax,
     tags: [row.category],
     category: row.category,
-    isFavorite: false,
+    isFavorite,
     googlePlaceId: row.google_place_id ?? undefined,
     notes: row.notes ?? undefined,
   };

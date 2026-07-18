@@ -196,7 +196,9 @@ export default function JoinInvitePage({ inviteCode }: JoinInvitePageProps) {
           <p className="mt-3 font-display text-lg font-bold text-deep-brown">
             {preview.groupName}
           </p>
-          <p className="mt-3 text-sm text-cocoa">你已經是此群組成員。</p>
+          <p className="mt-3 text-sm text-cocoa">
+            你已經是「{preview.groupName}」的成員了。
+          </p>
           <Link
             href="/"
             className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-full bg-caramel text-sm font-bold text-rice-white shadow-button"

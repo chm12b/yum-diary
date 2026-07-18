@@ -11,23 +11,30 @@ import type { Restaurant } from "@/src/lib/restaurant-types";
 type RestaurantCardProps = {
   restaurant: Restaurant;
   onClick?: () => void;
+  onFavoriteClick?: () => void;
 };
 
 export default function RestaurantCard({
   restaurant,
   onClick,
+  onFavoriteClick,
 }: RestaurantCardProps) {
   const hasRating = restaurant.rating > 0;
   const hasDistance = restaurant.distanceMeters > 0;
   const priceLabel = resolvePriceLabel(restaurant);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <article
       className="relative flex w-full gap-3 rounded-[1.25rem] border border-border bg-rice-white px-3 pt-3 pb-0 text-left shadow-soft"
     >
-      <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={`查看 ${restaurant.name}`}
+        className="absolute inset-0 rounded-[1.25rem]"
+      />
+
+      <div className="pointer-events-none relative z-10 shrink-0">
         <div className="h-[100px] w-[120px] rounded-xl border-[3px] border-white bg-white p-1 shadow-soft">
           <div className="relative h-full w-full overflow-hidden rounded-lg">
             <Image
@@ -48,7 +55,7 @@ export default function RestaurantCard({
         />
       </div>
 
-      <div className="flex min-h-[100px] min-w-0 flex-1 flex-col gap-1.5 pb-7 pr-6">
+      <div className="pointer-events-none relative z-10 flex min-h-[100px] min-w-0 flex-1 flex-col gap-1.5 pb-7 pr-6">
         <h2 className="truncate font-bold text-deep-brown">{restaurant.name}</h2>
         {hasRating ? (
           <StarRating
@@ -72,19 +79,39 @@ export default function RestaurantCard({
         ) : null}
       </div>
 
-      <Heart
-        className={`absolute top-3 right-3 h-5 w-5 shrink-0 ${
-          restaurant.isFavorite
-            ? "fill-sakura-pink text-caramel"
-            : "text-cocoa/40"
-        }`}
-        strokeWidth={2}
-      />
+      {onFavoriteClick ? (
+        <button
+          type="button"
+          onClick={onFavoriteClick}
+          aria-label={restaurant.isFavorite ? "取消收藏" : "加入收藏"}
+          aria-pressed={restaurant.isFavorite}
+          className="absolute top-2 right-2 z-20 flex h-7 w-7 items-center justify-center"
+        >
+          <Heart
+            className={`h-5 w-5 shrink-0 ${
+              restaurant.isFavorite
+                ? "fill-sakura-pink text-caramel"
+                : "text-cocoa/40"
+            }`}
+            strokeWidth={2}
+          />
+        </button>
+      ) : (
+        <Heart
+          className={`pointer-events-none absolute top-3 right-3 z-10 h-5 w-5 shrink-0 ${
+            restaurant.isFavorite
+              ? "fill-sakura-pink text-caramel"
+              : "text-cocoa/40"
+          }`}
+          strokeWidth={2}
+          aria-hidden
+        />
+      )}
 
       <StatusBadge
         status={restaurant.openStatus ?? "unknown"}
-        className="absolute right-3 bottom-3"
+        className="pointer-events-none absolute right-3 bottom-3 z-10"
       />
-    </button>
+    </article>
   );
 }

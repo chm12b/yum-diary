@@ -48,6 +48,7 @@ export function mapRestaurantRecordToDetail(
   reference: GeoPoint | null = null,
   firstPhotoUrls: Map<string, string> = new Map(),
   authorNames: Map<string, string> = new Map(),
+  isFavorite = false,
 ): RestaurantDetail {
   const priceMin = row.price_min ?? 0;
   const priceMax = row.price_max ?? priceMin;
@@ -92,7 +93,7 @@ export function mapRestaurantRecordToDetail(
     priceMax,
     tags: [row.category],
     category: row.category,
-    isFavorite: false,
+    isFavorite,
     googlePlaceId: row.google_place_id ?? undefined,
     lastGoogleSyncAt: row.last_google_sync_at,
     notes: row.notes ?? undefined,
@@ -100,6 +101,8 @@ export function mapRestaurantRecordToDetail(
     phoneNumber: row.phone ?? undefined,
     address: row.address ?? undefined,
     websiteUrl: row.website_url ?? undefined,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
     menuImages: [],
     lastVisited: latest?.visitDate,
     myRating: latest?.rating,

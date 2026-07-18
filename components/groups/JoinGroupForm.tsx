@@ -6,12 +6,16 @@ import { useEffect, useRef, useState } from "react";
 
 import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 import { homeAssets } from "@/src/lib/home-assets";
-import { joinGroupByInviteCode } from "@/src/services/groups/group.service";
+import {
+  getInvitePreview,
+  joinGroupByInviteCode,
+  listMyGroups,
+} from "@/src/services/groups/group.service";
 
 const MAX_CODE_LENGTH = 6;
 const INVITE_CODE_PATTERN = /^[A-Z0-9]{6}$/;
 const TOAST_MS = 1800;
-const SUCCESS_NAVIGATE_MS = 700;
+const SUCCESS_NAVIGATE_MS = 900;
 
 export default function JoinGroupForm() {
   const router = useRouter();
@@ -45,6 +49,16 @@ export default function JoinGroupForm() {
     }, TOAST_MS);
   }
 
+  function goHomeSoon() {
+    if (navigateTimerRef.current != null) {
+      window.clearTimeout(navigateTimerRef.current);
+    }
+    navigateTimerRef.current = window.setTimeout(() => {
+      router.replace("/");
+      navigateTimerRef.current = null;
+    }, SUCCESS_NAVIGATE_MS);
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -69,6 +83,26 @@ export default function JoinGroupForm() {
     setSubmitting(true);
 
     try {
+      const { data: preview, error: previewError } =
+        await getInvitePreview(trimmed);
+
+      if (previewError || !preview) {
+        setError("邀請碼無效，請再確認一次");
+        return;
+      }
+
+      const { data: mine } = await listMyGroups();
+      const alreadyMember = mine.some(
+        (group) => group.id === preview.groupId,
+      );
+
+      if (alreadyMember) {
+        await switchGroup(preview.groupId);
+        showToast(`你已經是「${preview.groupName}」的成員了。`);
+        goHomeSoon();
+        return;
+      }
+
       const { data: groupId, error: joinError } =
         await joinGroupByInviteCode(trimmed);
 
@@ -78,15 +112,8 @@ export default function JoinGroupForm() {
       }
 
       await switchGroup(groupId);
-      showToast("已成功加入群組。");
-
-      if (navigateTimerRef.current != null) {
-        window.clearTimeout(navigateTimerRef.current);
-      }
-      navigateTimerRef.current = window.setTimeout(() => {
-        router.replace("/");
-        navigateTimerRef.current = null;
-      }, SUCCESS_NAVIGATE_MS);
+      showToast(`歡迎加入「${preview.groupName}」。`);
+      goHomeSoon();
     } catch {
       setError("加入失敗，請稍後再試");
     } finally {

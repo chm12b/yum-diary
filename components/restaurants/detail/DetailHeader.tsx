@@ -6,9 +6,11 @@ import { useEffect, useRef, useState } from "react";
 
 type DetailHeaderProps = {
   isFavorite: boolean;
+  isFavoriteLoading?: boolean;
   restaurantId?: string;
   canSyncGoogle?: boolean;
   isSyncing?: boolean;
+  onToggleFavorite?: () => void;
   onSyncGoogle?: () => void;
 };
 
@@ -17,9 +19,11 @@ const iconButtonClass =
 
 export default function DetailHeader({
   isFavorite,
+  isFavoriteLoading = false,
   restaurantId,
   canSyncGoogle = false,
   isSyncing = false,
+  onToggleFavorite,
   onSyncGoogle,
 }: DetailHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -56,7 +60,14 @@ export default function DetailHeader({
       </Link>
       <div />
       <div className="flex items-center gap-2 justify-self-end">
-        <button type="button" aria-label="收藏" className={iconButtonClass}>
+        <button
+          type="button"
+          aria-label={isFavorite ? "取消收藏" : "收藏"}
+          aria-pressed={isFavorite}
+          disabled={isFavoriteLoading || !onToggleFavorite}
+          onClick={onToggleFavorite}
+          className={iconButtonClass}
+        >
           <Heart
             className={`h-5 w-5 ${
               isFavorite ? "fill-sakura-pink text-caramel" : "text-deep-brown"

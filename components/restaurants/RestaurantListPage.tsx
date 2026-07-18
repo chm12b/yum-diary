@@ -15,6 +15,7 @@ import { homeAssets } from "@/src/lib/home-assets";
 import { mapRestaurantRecordToListItem } from "@/src/lib/map-restaurant-list-item";
 import { LIST_CATEGORY_FILTERS } from "@/src/lib/restaurants/category";
 import type { Restaurant } from "@/src/lib/restaurant-types";
+import { listFavorites } from "@/src/services/favorite";
 import { getCurrentGroup } from "@/src/services/groups/group.service";
 import { listRestaurants } from "@/src/services/restaurant";
 import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
@@ -33,9 +34,10 @@ export default function RestaurantListPage() {
     setStatus("loading");
 
     try {
-      const [rows, groupResult] = await Promise.all([
+      const [rows, groupResult, favorites] = await Promise.all([
         listRestaurants(),
         getCurrentGroup(),
+        listFavorites(),
       ]);
       const reference = groupResult.data
         ? {
@@ -43,8 +45,17 @@ export default function RestaurantListPage() {
             lng: groupResult.data.referenceLng,
           }
         : null;
+      const favoriteIds = new Set(
+        favorites.map((favorite) => favorite.restaurantId),
+      );
       setRestaurants(
-        rows.map((row) => mapRestaurantRecordToListItem(row, reference)),
+        rows.map((row) =>
+          mapRestaurantRecordToListItem(
+            row,
+            reference,
+            favoriteIds.has(row.id),
+          ),
+        ),
       );
       setStatus("ready");
     } catch {

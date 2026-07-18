@@ -12,6 +12,10 @@ import RestaurantInfoList from "@/components/restaurants/detail/RestaurantInfoLi
 import { mapRestaurantRecordToDetail } from "@/src/lib/map-restaurant-detail";
 import type { GeoPoint } from "@/src/lib/restaurants/distance";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
+import {
+  isFavorite as getIsFavorite,
+  toggleFavorite,
+} from "@/src/services/favorite";
 import { getCurrentGroup } from "@/src/services/groups/group.service";
 import { listProfileDisplayNames } from "@/src/services/profile/profile.service";
 import { listRestaurantRecords } from "@/src/services/record";
@@ -41,6 +45,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
   const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const toastTimerRef = useRef<number | null>(null);
   const referenceRef = useRef<GeoPoint | null>(null);
@@ -64,14 +69,19 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
     }, TOAST_MS);
   }
 
+  function showActionToast(message: string) {
+    showToast("error", message);
+  }
+
   async function loadRestaurant() {
     setStatus("loading");
 
     try {
-      const [row, diningRecords, groupResult] = await Promise.all([
+      const [row, diningRecords, groupResult, favorite] = await Promise.all([
         getRestaurant(restaurantId),
         listRestaurantRecords(restaurantId),
         getCurrentGroup(),
+        getIsFavorite(restaurantId),
       ]);
 
       const firstPhotoUrls = await listFirstRecordPhotoUrls(
@@ -101,6 +111,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
           referenceRef.current,
           firstPhotoUrls,
           authorNames,
+          favorite,
         ),
       );
       setStatus("ready");
@@ -135,6 +146,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
           referenceRef.current,
           firstPhotoUrls,
           authorNames,
+          restaurant?.isFavorite ?? false,
         ),
       );
       showToast("success", "✨ 已同步最新 Google 資料");
@@ -150,6 +162,36 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       }
     } finally {
       setIsSyncing(false);
+    }
+  }
+
+  async function handleToggleFavorite() {
+    if (!restaurant || isFavoriteLoading) {
+      return;
+    }
+
+    const previous = restaurant.isFavorite;
+    setIsFavoriteLoading(true);
+    setRestaurant((current) =>
+      current ? { ...current, isFavorite: !previous } : current,
+    );
+
+    try {
+      const favorite = await toggleFavorite(restaurant.id);
+      setRestaurant((current) =>
+        current ? { ...current, isFavorite: favorite } : current,
+      );
+      showToast(
+        "success",
+        favorite ? "已加入我的收藏。" : "已取消我的收藏。",
+      );
+    } catch {
+      setRestaurant((current) =>
+        current ? { ...current, isFavorite: previous } : current,
+      );
+      showToast("error", "更新收藏失敗，請稍後再試。");
+    } finally {
+      setIsFavoriteLoading(false);
     }
   }
 
@@ -217,11 +259,15 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
     <div className="home-grid-bg min-h-full pb-6">
       <DetailHeader
         isFavorite={restaurant.isFavorite}
+        isFavoriteLoading={isFavoriteLoading}
         restaurantId={restaurant.id}
         canSyncGoogle={Boolean(restaurant.googlePlaceId)}
         isSyncing={isSyncing}
         onSyncGoogle={() => {
           void handleSyncGoogle();
+        }}
+        onToggleFavorite={() => {
+          void handleToggleFavorite();
         }}
       />
       <Identity restaurant={restaurant} />
@@ -231,7 +277,18 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         restaurantName={restaurant.name}
       />
       <MyRecordSection restaurant={restaurant} />
-      <DetailActionBar isFavorite={restaurant.isFavorite} />
+      <DetailActionBar
+        restaurantId={restaurant.id}
+        isFavorite={restaurant.isFavorite}
+        isFavoriteLoading={isFavoriteLoading}
+        latitude={restaurant.latitude}
+        longitude={restaurant.longitude}
+        address={restaurant.address}
+        onToggleFavorite={() => {
+          void handleToggleFavorite();
+        }}
+        onToast={showActionToast}
+      />
 
       {toast ? (
         <div
