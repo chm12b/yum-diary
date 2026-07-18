@@ -30,7 +30,7 @@ export default function JoinGroupForm() {
           type="text"
           value={code}
           onChange={(event) => setCode(event.target.value)}
-          placeholder="例如：A7K9Q2"
+          placeholder="請輸入邀請碼（例如：ABCDEFGH）"
           autoComplete="off"
           spellCheck={false}
           className="h-14 w-full rounded-[24px] border border-border bg-white px-5 pb-4 pt-3 text-base text-deep-brown placeholder:text-soft-gray transition-colors focus:border-caramel focus:outline-none"

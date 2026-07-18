@@ -183,6 +183,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      restaurant_photos: {
+        Row: {
+          id: string;
+          restaurant_id: string;
+          storage_path: string;
+          caption: string | null;
+          is_cover: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          restaurant_id: string;
+          storage_path: string;
+          caption?: string | null;
+          is_cover?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          restaurant_id?: string;
+          storage_path?: string;
+          caption?: string | null;
+          is_cover?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       records: {
         Row: {
           id: string;
@@ -328,6 +355,13 @@ export type Database = {
       leave_group: {
         Args: {
           p_group_id: string;
+        };
+        Returns: string | null;
+      };
+      hard_delete_group: {
+        Args: {
+          p_group_id: string;
+          p_dry_run: boolean;
         };
         Returns: string | null;
       };

@@ -581,3 +581,59 @@ export async function leaveGroup(
     error: null,
   };
 }
+
+export type DeleteGroupData = {
+  deletedGroupName: string;
+  nextGroupId: string | null;
+};
+
+type DeleteGroupApiResponse = {
+  data: DeleteGroupData | null;
+  error: string | null;
+};
+
+/**
+ * Permanently delete a group as owner.
+ * The server route removes Storage objects first, then invokes the DB RPC.
+ */
+export async function deleteGroup(
+  groupId: string,
+): Promise<GroupResult<DeleteGroupData | null>> {
+  const id = groupId.trim();
+  if (!id) {
+    return { data: null, error: null };
+  }
+
+  try {
+    const response = await fetch(`/api/groups/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    const payload = (await response.json()) as DeleteGroupApiResponse;
+
+    if (!response.ok || !payload.data) {
+      return {
+        data: null,
+        error: {
+          name: "PostgrestError",
+          message: payload.error ?? "Failed to delete group",
+          details: "",
+          hint: "",
+          code: String(response.status),
+        } as PostgrestError,
+      };
+    }
+
+    return { data: payload.data, error: null };
+  } catch {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Failed to delete group",
+        details: "",
+        hint: "",
+        code: "NETWORK_ERROR",
+      } as PostgrestError,
+    };
+  }
+}

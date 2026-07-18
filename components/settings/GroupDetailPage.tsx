@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 
+import DeleteGroupDialog from "@/components/settings/DeleteGroupDialog";
 import LeaveGroupDialog from "@/components/settings/LeaveGroupDialog";
 import RenameGroupSheet from "@/components/settings/RenameGroupSheet";
 import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 import {
+  deleteGroup,
   getGroupDetail,
   leaveGroup,
   updateGroupName,
@@ -67,6 +69,8 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
   const [renaming, setRenaming] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const toastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -116,10 +120,6 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
       setToast(null);
       toastTimerRef.current = null;
     }, TOAST_MS);
-  }
-
-  function showComingSoon() {
-    showToast("Coming Soon");
   }
 
   async function handleRenameSave(nextName: string) {
@@ -178,6 +178,36 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
       showToast("離開群組失敗，請稍後再試。");
     } finally {
       setLeaving(false);
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    if (!group || !group.isOwner || deleting) {
+      return;
+    }
+
+    setDeleting(true);
+
+    try {
+      const { data, error } = await deleteGroup(group.id);
+
+      if (error || !data) {
+        showToast("解散群組失敗，請稍後再試。");
+        return;
+      }
+
+      const deletedName = data.deletedGroupName;
+      setDeleteOpen(false);
+      await syncAfterGroupChange();
+      showToast(`已解散「${deletedName}」。`);
+
+      window.setTimeout(() => {
+        router.replace("/");
+      }, 900);
+    } catch {
+      showToast("解散群組失敗，請稍後再試。");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -340,7 +370,7 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
             <>
               <button
                 type="button"
-                onClick={showComingSoon}
+                onClick={() => setDeleteOpen(true)}
                 className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-cream-bg/40 active:bg-cream-bg/60"
               >
                 <span className="text-base leading-none" aria-hidden>
@@ -406,6 +436,17 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
           }
         }}
         onConfirm={handleLeaveConfirm}
+      />
+
+      <DeleteGroupDialog
+        open={deleteOpen}
+        submitting={deleting}
+        onClose={() => {
+          if (!deleting) {
+            setDeleteOpen(false);
+          }
+        }}
+        onConfirm={handleDeleteConfirm}
       />
 
       {toast ? (

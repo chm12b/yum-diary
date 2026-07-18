@@ -23,6 +23,7 @@ export default function GroupInvitePage({ groupId }: GroupInvitePageProps) {
   const router = useRouter();
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [groupName, setGroupName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [inviteUrl, setInviteUrl] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -64,6 +65,7 @@ export default function GroupInvitePage({ groupId }: GroupInvitePageProps) {
         }
 
         setGroupName(data.name);
+        setInviteCode(data.inviteCode);
         setInviteUrl(buildInviteUrl(data.inviteCode));
         setStatus("ready");
       } catch {
@@ -91,13 +93,13 @@ export default function GroupInvitePage({ groupId }: GroupInvitePageProps) {
     }, TOAST_MS);
   }
 
-  async function copyLink() {
+  async function copyText(value: string, successMessage: string) {
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(inviteUrl);
+        await navigator.clipboard.writeText(value);
       } else {
         const input = document.createElement("textarea");
-        input.value = inviteUrl;
+        input.value = value;
         input.setAttribute("readonly", "");
         input.style.position = "fixed";
         input.style.left = "-9999px";
@@ -106,10 +108,18 @@ export default function GroupInvitePage({ groupId }: GroupInvitePageProps) {
         document.execCommand("copy");
         document.body.removeChild(input);
       }
-      showToast("已複製邀請連結。");
+      showToast(successMessage);
     } catch {
-      // Clipboard unavailable — share fallback still lands here; avoid error UI.
+      // Clipboard unavailable — avoid error UI.
     }
+  }
+
+  async function copyLink() {
+    await copyText(inviteUrl, "已複製邀請連結。");
+  }
+
+  async function copyInviteCode() {
+    await copyText(inviteCode, "已複製邀請碼。");
   }
 
   async function shareLink() {
@@ -203,38 +213,57 @@ export default function GroupInvitePage({ groupId }: GroupInvitePageProps) {
             邀請朋友加入
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-cocoa">
-            任何取得此邀請連結的人，都可以加入此群組。
+            任何取得此邀請連結或邀請碼的人，都可以加入此群組。
           </p>
           <p className="mt-1 text-xs text-text-secondary">{groupName}</p>
 
           <div className="my-5 border-t border-dashed border-border" />
 
-          <p className="break-all rounded-xl border border-border bg-cream-bg/60 px-3 py-3 text-left text-xs leading-relaxed text-deep-brown">
-            {inviteUrl}
-          </p>
+          <div className="text-left">
+            <p className="text-sm font-medium text-deep-brown">🔗 邀請連結</p>
+            <p className="mt-2 break-all rounded-xl border border-border bg-cream-bg/60 px-3 py-3 text-xs leading-relaxed text-deep-brown">
+              {inviteUrl}
+            </p>
+            <div className="mt-3 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  void copyLink();
+                }}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-caramel text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.98]"
+              >
+                <Copy className="h-4 w-4" strokeWidth={2.5} />
+                複製連結
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void shareLink();
+                }}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-cream-bg/60 text-sm font-bold text-deep-brown transition-colors hover:bg-cream-bg active:scale-[0.98]"
+              >
+                <Share2 className="h-4 w-4" strokeWidth={2.5} />
+                分享
+              </button>
+            </div>
+          </div>
 
           <div className="my-5 border-t border-dashed border-border" />
 
-          <div className="flex flex-col gap-2.5">
+          <div className="text-left">
+            <p className="text-sm font-medium text-deep-brown">🔑 邀請碼</p>
+            <p className="mt-2 rounded-xl border border-border bg-cream-bg/60 px-3 py-3 text-center font-mono text-lg tracking-[0.2em] text-deep-brown">
+              {inviteCode}
+            </p>
             <button
               type="button"
               onClick={() => {
-                void copyLink();
+                void copyInviteCode();
               }}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-caramel text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.98]"
+              className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-cream-bg/60 text-sm font-bold text-deep-brown transition-colors hover:bg-cream-bg active:scale-[0.98]"
             >
               <Copy className="h-4 w-4" strokeWidth={2.5} />
-              複製連結
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void shareLink();
-              }}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-cream-bg/60 text-sm font-bold text-deep-brown transition-colors hover:bg-cream-bg active:scale-[0.98]"
-            >
-              <Share2 className="h-4 w-4" strokeWidth={2.5} />
-              分享
+              複製邀請碼
             </button>
           </div>
         </div>
