@@ -19,10 +19,25 @@ export type CurrentGroup = {
   id: string;
   name: string;
   inviteCode: string;
-  referenceName: string;
-  referenceLat: number;
-  referenceLng: number;
+  referenceName: string | null;
+  referenceLat: number | null;
+  referenceLng: number | null;
 };
+
+export type ReferenceLocation = {
+  groupId: string;
+  name: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+
+export type UpdateReferenceLocationInput = {
+  name: string;
+  lat: number;
+  lng: number;
+};
+
+const REFERENCE_NAME_MAX = 50;
 
 export type GroupListItem = {
   id: string;
@@ -636,4 +651,158 @@ export async function deleteGroup(
       } as PostgrestError,
     };
   }
+}
+
+/**
+ * Read the current group's reference location.
+ */
+export async function getReferenceLocation(): Promise<
+  GroupResult<ReferenceLocation | null>
+> {
+  const { data, error } = await getCurrentGroup();
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  if (!data) {
+    return { data: null, error: null };
+  }
+
+  return {
+    data: {
+      groupId: data.id,
+      name: data.referenceName,
+      lat: data.referenceLat,
+      lng: data.referenceLng,
+    },
+    error: null,
+  };
+}
+
+/**
+ * Update the current group's reference location.
+ * RLS allows only the group owner to update groups.
+ */
+export async function updateReferenceLocation({
+  name,
+  lat,
+  lng,
+}: UpdateReferenceLocationInput): Promise<
+  GroupResult<ReferenceLocation | null>
+> {
+  const nextName = name.trim().slice(0, REFERENCE_NAME_MAX);
+
+  if (!nextName || !Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return { data: null, error: null };
+  }
+
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return { data: null, error: null };
+  }
+
+  const { data: current, error: currentError } = await getCurrentGroup();
+
+  if (currentError) {
+    return { data: null, error: currentError };
+  }
+
+  if (!current) {
+    return { data: null, error: null };
+  }
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("groups")
+    .update({
+      reference_name: nextName,
+      reference_lat: lat,
+      reference_lng: lng,
+    })
+    .eq("id", current.id)
+    .select("id, reference_name, reference_lat, reference_lng")
+    .maybeSingle();
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  if (!data) {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Group not found or not allowed",
+        details: "",
+        hint: "",
+        code: "PGRST116",
+      } as PostgrestError,
+    };
+  }
+
+  return {
+    data: {
+      groupId: data.id,
+      name: data.reference_name,
+      lat: data.reference_lat,
+      lng: data.reference_lng,
+    },
+    error: null,
+  };
+}
+
+/**
+ * Clear the current group's reference location (set all three fields to NULL).
+ */
+export async function clearReferenceLocation(): Promise<
+  GroupResult<ReferenceLocation | null>
+> {
+  const { data: current, error: currentError } = await getCurrentGroup();
+
+  if (currentError) {
+    return { data: null, error: currentError };
+  }
+
+  if (!current) {
+    return { data: null, error: null };
+  }
+
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("groups")
+    .update({
+      reference_name: null,
+      reference_lat: null,
+      reference_lng: null,
+    })
+    .eq("id", current.id)
+    .select("id, reference_name, reference_lat, reference_lng")
+    .maybeSingle();
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  if (!data) {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Group not found or not allowed",
+        details: "",
+        hint: "",
+        code: "PGRST116",
+      } as PostgrestError,
+    };
+  }
+
+  return {
+    data: {
+      groupId: data.id,
+      name: data.reference_name,
+      lat: data.reference_lat,
+      lng: data.reference_lng,
+    },
+    error: null,
+  };
 }

@@ -39,12 +39,14 @@ export default function RestaurantListPage() {
         getCurrentGroup(),
         listFavorites(),
       ]);
-      const reference = groupResult.data
-        ? {
-            lat: groupResult.data.referenceLat,
-            lng: groupResult.data.referenceLng,
-          }
-        : null;
+      const reference =
+        groupResult.data?.referenceLat != null &&
+        groupResult.data?.referenceLng != null
+          ? {
+              lat: groupResult.data.referenceLat,
+              lng: groupResult.data.referenceLng,
+            }
+          : null;
       const favoriteIds = new Set(
         favorites.map((favorite) => favorite.restaurantId),
       );

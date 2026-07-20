@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import SettingsPlaceholderPage from "@/components/settings/SettingsPlaceholderPage";
+import LocationSettingsPage from "@/components/settings/LocationSettingsPage";
 
 export const metadata: Metadata = {
   title: "預設位置｜Yum Diary",
 };
 
 export default function SettingsLocationRoute() {
-  return <SettingsPlaceholderPage title="預設位置" />;
+  return <LocationSettingsPage />;
 }

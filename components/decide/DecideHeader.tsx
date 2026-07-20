@@ -16,7 +16,7 @@ export default function DecideHeader() {
           <ArrowLeft className="h-5 w-5" strokeWidth={2} />
         </Link>
         <h1 className="text-center font-display text-lg font-bold text-deep-brown">
-          幫我決定
+          今天吃什麼？
         </h1>
         <div />
       </div>

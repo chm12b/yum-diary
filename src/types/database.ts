@@ -43,9 +43,9 @@ export type Database = {
           invite_code: string;
           owner_id: string;
           is_archived: boolean;
-          reference_name: string;
-          reference_lat: number;
-          reference_lng: number;
+          reference_name: string | null;
+          reference_lat: number | null;
+          reference_lng: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -55,9 +55,9 @@ export type Database = {
           invite_code: string;
           owner_id: string;
           is_archived?: boolean;
-          reference_name?: string;
-          reference_lat?: number;
-          reference_lng?: number;
+          reference_name?: string | null;
+          reference_lat?: number | null;
+          reference_lng?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -67,9 +67,9 @@ export type Database = {
           invite_code?: string;
           owner_id?: string;
           is_archived?: boolean;
-          reference_name?: string;
-          reference_lat?: number;
-          reference_lng?: number;
+          reference_name?: string | null;
+          reference_lat?: number | null;
+          reference_lng?: number | null;
           created_at?: string;
           updated_at?: string;
         };

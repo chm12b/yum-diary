@@ -14,6 +14,15 @@ function isPasswordResetPath(pathname: string) {
   return pathname === "/forgot-password" || pathname === "/reset-password";
 }
 
+/** Restaurant detail deep link: /restaurants/{id} (not list or nested routes). */
+function isRestaurantDetailPath(pathname: string) {
+  return /^\/restaurants\/[^/]+$/.test(pathname);
+}
+
+function isAuthNextPath(pathname: string) {
+  return isJoinPath(pathname) || isRestaurantDetailPath(pathname);
+}
+
 export default function AppStartup() {
   const router = useRouter();
   const pathname = usePathname();
@@ -29,7 +38,7 @@ export default function AppStartup() {
 
     async function resolveStartupPath() {
       if (!session) {
-        if (isJoinPath(pathname)) {
+        if (isAuthNextPath(pathname)) {
           router.replace(`/auth?next=${encodeURIComponent(pathname)}`);
           return;
         }
@@ -43,7 +52,10 @@ export default function AppStartup() {
         return;
       }
 
-      if (isJoinPath(pathname) || isPasswordResetPath(pathname)) {
+      if (
+        isAuthNextPath(pathname) ||
+        isPasswordResetPath(pathname)
+      ) {
         return;
       }
 

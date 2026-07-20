@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 type SettingsRowProps = {
   emoji: string;
   label: string;
+  subtitle?: string;
   href?: string;
   trailing?: string;
   disabled?: boolean;
@@ -12,6 +13,7 @@ type SettingsRowProps = {
 function SettingsRow({
   emoji,
   label,
+  subtitle,
   href,
   trailing,
   disabled = false,
@@ -21,8 +23,15 @@ function SettingsRow({
       <span className="text-base leading-none" aria-hidden>
         {emoji}
       </span>
-      <span className="min-w-0 flex-1 text-left text-base font-medium text-deep-brown">
-        {label}
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block text-base font-medium text-deep-brown">
+          {label}
+        </span>
+        {subtitle ? (
+          <span className="mt-1 block text-xs leading-relaxed text-text-secondary">
+            {subtitle}
+          </span>
+        ) : null}
       </span>
       {trailing ? (
         <span className="shrink-0 text-xs text-text-secondary">{trailing}</span>
@@ -86,6 +95,13 @@ export default function SettingsPage() {
           <SettingsRow emoji="👥" label="群組管理" href="/settings/groups" />
           <RowDivider />
           <SettingsRow emoji="📍" label="預設位置" href="/settings/location" />
+          <RowDivider />
+          <SettingsRow
+            emoji="🍽"
+            label="今天吃什麼"
+            subtitle="設定兔兔幫你決定餐廳時使用的條件。"
+            href="/settings/decide"
+          />
           <RowDivider />
           <SettingsRow
             emoji="ℹ️"

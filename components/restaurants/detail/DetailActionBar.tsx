@@ -1,20 +1,22 @@
 "use client";
 
-import { Heart, MapPin, Pencil } from "lucide-react";
+import { MapPin, Pencil, Share } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
+import {
+  buildRestaurantShareMessage,
+  buildRestaurantShareUrl,
+} from "@/src/lib/app-url";
 import { homeAssets } from "@/src/lib/home-assets";
 
 type DetailActionBarProps = {
   restaurantId: string;
-  isFavorite: boolean;
-  isFavoriteLoading: boolean;
+  restaurantName: string;
   latitude?: number | null;
   longitude?: number | null;
   address?: string | null;
-  onToggleFavorite: () => void;
-  onToast: (message: string) => void;
+  onToast: (type: "success" | "error", message: string) => void;
 };
 
 const outlineButtonClass =
@@ -24,16 +26,57 @@ function hasFiniteCoord(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value);
 }
 
+async function copyShareText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  input.style.position = "fixed";
+  input.style.left = "-9999px";
+  document.body.appendChild(input);
+  input.select();
+  const copied = document.execCommand("copy");
+  document.body.removeChild(input);
+  if (!copied) {
+    throw new Error("Clipboard copy failed");
+  }
+}
+
 export default function DetailActionBar({
   restaurantId,
-  isFavorite,
-  isFavoriteLoading,
+  restaurantName,
   latitude,
   longitude,
   address,
-  onToggleFavorite,
   onToast,
 }: DetailActionBarProps) {
+  async function handleShare() {
+    const url = buildRestaurantShareUrl(restaurantId);
+    const text = buildRestaurantShareMessage(restaurantName, url);
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    try {
+      await copyShareText(text);
+      onToast("success", "已複製分享連結。");
+    } catch {
+      onToast("error", "分享失敗，請稍後再試。");
+    }
+  }
+
   function handleNavigate() {
     if (hasFiniteCoord(latitude) && hasFiniteCoord(longitude)) {
       window.open(
@@ -54,7 +97,7 @@ export default function DetailActionBar({
       return;
     }
 
-    onToast("目前沒有可導航的位置資訊。");
+    onToast("error", "目前沒有可導航的位置資訊。");
   }
 
   return (
@@ -62,18 +105,13 @@ export default function DetailActionBar({
       <div className="flex items-center gap-2">
         <button
           type="button"
-          disabled={isFavoriteLoading}
-          onClick={onToggleFavorite}
+          onClick={() => {
+            void handleShare();
+          }}
           className={`${outlineButtonClass} w-[4.5rem]`}
-          aria-pressed={isFavorite}
         >
-          <Heart
-            className={`h-4 w-4 ${
-              isFavorite ? "fill-sakura-pink text-caramel" : "text-cocoa"
-            }`}
-            strokeWidth={2}
-          />
-          收藏
+          <Share className="h-4 w-4 text-cocoa" strokeWidth={2} />
+          分享
         </button>
         <button
           type="button"

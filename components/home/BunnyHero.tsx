@@ -16,12 +16,17 @@ export default function BunnyHero() {
           sizes="(max-width: 28rem) 100vw, 28rem"
         />
       </div>
-      <PrimaryButton
-        title="幫我決定"
-        subtitle="讓兔兔幫你挑選吧～"
-        iconSrc={homeAssets.iconDice}
-        trailingIconSrc={homeAssets.entryArrow}
-      />
+      <div className="flex flex-col items-center">
+        <PrimaryButton
+          href="/decide"
+          title="幫我決定"
+          iconSrc={homeAssets.iconDice}
+          trailingIconSrc={homeAssets.entryArrow}
+        />
+        <p className="mt-3 text-center text-sm text-text-secondary">
+          讓兔兔幫你決定 ❤️
+        </p>
+      </div>
     </section>
   );
 }

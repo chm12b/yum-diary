@@ -69,9 +69,6 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
     }, TOAST_MS);
   }
 
-  function showActionToast(message: string) {
-    showToast("error", message);
-  }
 
   async function loadRestaurant() {
     setStatus("loading");
@@ -91,12 +88,14 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         diningRecords.map((record) => record.user_id),
       );
 
-      referenceRef.current = groupResult.data
-        ? {
-            lat: groupResult.data.referenceLat,
-            lng: groupResult.data.referenceLng,
-          }
-        : null;
+      referenceRef.current =
+        groupResult.data?.referenceLat != null &&
+        groupResult.data?.referenceLng != null
+          ? {
+              lat: groupResult.data.referenceLat,
+              lng: groupResult.data.referenceLng,
+            }
+          : null;
 
       if (!row) {
         setRestaurant(null);
@@ -279,15 +278,11 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       <MyRecordSection restaurant={restaurant} />
       <DetailActionBar
         restaurantId={restaurant.id}
-        isFavorite={restaurant.isFavorite}
-        isFavoriteLoading={isFavoriteLoading}
+        restaurantName={restaurant.name}
         latitude={restaurant.latitude}
         longitude={restaurant.longitude}
         address={restaurant.address}
-        onToggleFavorite={() => {
-          void handleToggleFavorite();
-        }}
-        onToast={showActionToast}
+        onToast={showToast}
       />
 
       {toast ? (

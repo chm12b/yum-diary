@@ -25,6 +25,25 @@ export function buildInviteUrl(inviteCode: string): string {
   return `${base}/join/${code}`;
 }
 
+/** Build restaurant share URL: {APP_URL}/restaurants/{restaurantId} */
+export function buildRestaurantShareUrl(restaurantId: string): string {
+  const id = restaurantId.trim();
+  const base = getAppUrl();
+  if (!base) {
+    return `/restaurants/${id}`;
+  }
+  return `${base}/restaurants/${id}`;
+}
+
+/** Full restaurant share message for Web Share API and clipboard fallback. */
+export function buildRestaurantShareMessage(
+  restaurantName: string,
+  url: string,
+): string {
+  const name = restaurantName.trim();
+  return `🍽 今天決定吃這家！\n\n📍 ${name}\n\n一起看看菜單，決定要吃什麼吧 😋\n\n${url}`;
+}
+
 /** Build password-reset redirect URL: {APP_URL}/reset-password */
 export function buildResetPasswordUrl(): string {
   const base = getAppUrl();

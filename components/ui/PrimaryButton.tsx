@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 type PrimaryButtonProps = {
@@ -7,9 +8,13 @@ type PrimaryButtonProps = {
   icon?: ReactNode;
   iconSrc?: string;
   trailingIconSrc?: string;
+  href?: string;
   onClick?: () => void;
   className?: string;
 };
+
+const buttonClassName =
+  "mx-auto -mt-2 -mb-2 flex h-20 w-[300px] flex-col justify-center rounded-[1.75rem] border border-border bg-sakura-pink px-5 py-3 text-left shadow-pink-button transition-transform active:scale-[0.98]";
 
 export default function PrimaryButton({
   title,
@@ -17,15 +22,12 @@ export default function PrimaryButton({
   icon,
   iconSrc,
   trailingIconSrc,
+  href,
   onClick,
   className = "",
 }: PrimaryButtonProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`mx-auto -mt-2 -mb-2 h-20 w-[300px] rounded-[1.75rem] border border-border bg-sakura-pink px-5 py-3 text-left shadow-pink-button transition-transform active:scale-[0.98] ${className}`}
-    >
+  const content = (
+    <>
       <span className="flex items-center gap-3">
         {iconSrc ? (
           <Image
@@ -39,7 +41,7 @@ export default function PrimaryButton({
         ) : icon ? (
           <span className="shrink-0 text-text-primary">{icon}</span>
         ) : null}
-        <span className="min-w-0 flex-1 text-[25px] font-bold leading-tight text-text-primary">
+        <span className="min-w-0 flex-1 -ml-[10px] text-center text-[24px] font-bold leading-tight tracking-[10px] text-text-primary">
           {title}
         </span>
         {trailingIconSrc ? (
@@ -58,6 +60,22 @@ export default function PrimaryButton({
           {subtitle}
         </span>
       ) : null}
+    </>
+  );
+
+  const combinedClassName = `${buttonClassName} ${className}`;
+
+  if (href) {
+    return (
+      <Link href={href} className={combinedClassName}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <button type="button" onClick={onClick} className={combinedClassName}>
+      {content}
     </button>
   );
 }
