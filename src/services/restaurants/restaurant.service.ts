@@ -11,11 +11,11 @@ export type RestaurantResult<T> = {
 
 export type RestaurantRow = Database["public"]["Tables"]["restaurants"]["Row"];
 
-export async function listRestaurants(): Promise<
-  RestaurantResult<RestaurantRow[]>
-> {
+export async function listRestaurants(
+  groupId: string,
+): Promise<RestaurantResult<RestaurantRow[]>> {
   try {
-    const data = await listRestaurantsForGroup();
+    const data = await listRestaurantsForGroup(groupId);
     return { data, error: null };
   } catch (error) {
     return {

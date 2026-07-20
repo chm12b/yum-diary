@@ -9,6 +9,8 @@ import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 
 type MyRecordSectionProps = {
   restaurant: RestaurantDetail;
+  status?: "loading" | "ready" | "error";
+  onRetry?: () => void;
 };
 
 function formatVisitDate(dateStr: string): string {
@@ -30,10 +32,29 @@ function summarizeNotes(notes: string, maxLength = 80): string {
   return `${trimmed.slice(0, maxLength).trimEnd()}…`;
 }
 
-export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
+function MyRecordSkeleton() {
+  return (
+    <div className="animate-pulse px-4 pt-5 pb-3" aria-hidden>
+      <div className="flex gap-3">
+        <div className="h-[80px] w-[110px] shrink-0 rounded-full bg-border/70" />
+        <div className="flex-1 space-y-2 pt-1">
+          <div className="h-3 w-28 rounded-full bg-border/80" />
+          <div className="h-4 w-20 rounded-full bg-border/60" />
+        </div>
+      </div>
+      <div className="mt-3 h-12 w-3/4 rounded-xl bg-border/50" />
+    </div>
+  );
+}
+
+export default function MyRecordSection({
+  restaurant,
+  status = "ready",
+  onRetry,
+}: MyRecordSectionProps) {
   const { lastVisited, myRating, recordCount, records } = restaurant;
   const totalRecords = recordCount ?? records?.length ?? 0;
-  const hasRecords = totalRecords > 0;
+  const hasRecords = status === "ready" && totalRecords > 0;
   const latest = records?.[0];
   const latestPhoto = latest?.photo ?? null;
   const hasLatestPhoto = Boolean(latestPhoto);
@@ -61,7 +82,24 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
         />
       </div>
       <div className="relative overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
-        {hasRecords && latest ? (
+        {status === "loading" ? <MyRecordSkeleton /> : null}
+
+        {status === "error" ? (
+          <div className="flex min-h-[7rem] flex-col items-center justify-center gap-3 px-4 py-8 text-center">
+            <p className="text-sm text-cocoa">載入日記失敗</p>
+            {onRetry ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="rounded-full bg-caramel px-5 py-2 text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.98]"
+              >
+                重新整理
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {status === "ready" && hasRecords && latest ? (
           <Link
             href={`/records/${latest.id}`}
             className="block px-4 pt-5 pb-3 transition-colors hover:bg-cream-bg/40"
@@ -95,11 +133,13 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
               </p>
             ) : null}
           </Link>
-        ) : (
+        ) : null}
+
+        {status === "ready" && !hasRecords ? (
           <div className="min-h-[7rem] px-4 pt-5 pb-3">
             <p className="text-sm text-cocoa/60">尚未紀錄</p>
           </div>
-        )}
+        ) : null}
 
         <Image
           src={homeAssets.recBunny}
@@ -110,7 +150,7 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
           className="pointer-events-none absolute right-2 bottom-10 h-[100px] w-[100px] object-contain"
         />
 
-        {hasRecords ? (
+        {status === "ready" && hasRecords ? (
           <Link
             href={`/restaurants/${restaurant.id}/records`}
             className="flex w-full items-center justify-center gap-1 border-t border-border py-3 text-sm text-cocoa transition-colors hover:text-deep-brown"
@@ -118,7 +158,9 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
             查看全部美食日記 ({totalRecords})
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </Link>
-        ) : (
+        ) : null}
+
+        {status === "ready" && !hasRecords ? (
           <Link
             href={`/restaurants/${restaurant.id}/records/new`}
             className="flex w-full items-center justify-center gap-1 border-t border-border py-3 text-sm font-medium text-deep-brown transition-colors hover:text-caramel"
@@ -126,7 +168,7 @@ export default function MyRecordSection({ restaurant }: MyRecordSectionProps) {
             新增紀錄
             <ChevronRight className="h-4 w-4" strokeWidth={2} />
           </Link>
-        )}
+        ) : null}
       </div>
     </section>
   );

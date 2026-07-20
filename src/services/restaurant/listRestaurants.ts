@@ -3,43 +3,23 @@ import { createClient } from "@/src/lib/supabase/client";
 import type { RestaurantRecord } from "./types";
 
 /**
- * List restaurants for the signed-in user's current group.
- * Ordered by created_at DESC. Returns [] when unauthenticated or no group.
+ * List restaurants for a group.
+ * Ordered by created_at DESC. Returns [] when groupId is empty.
+ * Caller supplies groupId (e.g. from CurrentGroupContext) — no auth/profile lookup.
  */
-export async function listRestaurants(): Promise<RestaurantRecord[]> {
+export async function listRestaurants(
+  groupId: string,
+): Promise<RestaurantRecord[]> {
+  const id = groupId.trim();
+  if (!id) {
+    return [];
+  }
+
   const supabase = createClient();
-
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError) {
-    throw userError;
-  }
-
-  if (!user) {
-    return [];
-  }
-
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("current_group_id")
-    .eq("id", user.id)
-    .single();
-
-  if (profileError) {
-    throw profileError;
-  }
-
-  if (!profile.current_group_id) {
-    return [];
-  }
-
   const { data, error } = await supabase
     .from("restaurants")
     .select("*")
-    .eq("group_id", profile.current_group_id)
+    .eq("group_id", id)
     .order("created_at", { ascending: false });
 
   if (error) {

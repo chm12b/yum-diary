@@ -8,6 +8,8 @@ export type PlaceSearchItem = {
   longitude: number | null;
   rating: number | null;
   reviewCount: number | null;
+  /** Google photo resource name (e.g. places/.../photos/...). Used for UI preview only. */
+  photo: string | null;
 };
 
 /** Matches restaurants.business_hours jsonb + Add Restaurant form state. */

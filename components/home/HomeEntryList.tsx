@@ -4,10 +4,10 @@ import { homeAssets } from "@/src/lib/home-assets";
 const homeEntries = [
   {
     id: "nearby",
-    label: "逛逛附近美食",
-    subtitle: "發現附近的美味餐廳",
+    label: "🔍 探索附近餐廳",
+    subtitle: "探索附近的美味餐廳",
     iconSrc: homeAssets.iconNearbyFood,
-    href: "/restaurants",
+    href: "/restaurants/nearby",
   },
   {
     id: "frequent",

@@ -80,15 +80,21 @@ export async function getDecideCandidates(
       ? listFavorites()
       : Promise.resolve([]);
 
-  const [rows, groupResult, favorites] = await Promise.all([
-    listRestaurants(),
-    getCurrentGroup(),
-    favoritePromise,
-  ]);
+  const groupResult = await getCurrentGroup();
 
   if (groupResult.error) {
     throw groupResult.error;
   }
+
+  const groupId = groupResult.data?.id;
+  if (!groupId) {
+    return null;
+  }
+
+  const [rows, favorites] = await Promise.all([
+    listRestaurants(groupId),
+    favoritePromise,
+  ]);
 
   const reference: GeoPoint | null =
     groupResult.data?.referenceLat != null &&

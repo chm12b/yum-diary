@@ -12,12 +12,15 @@ import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/src/hooks/useAuth";
 import {
-  getCurrentGroup,
+  getGroup,
   switchCurrentGroup as switchCurrentGroupService,
   type CurrentGroup,
 } from "@/src/services/groups/group.service";
+import { getCurrentGroupId } from "@/src/services/profile/profile.service";
 
 export type CurrentGroupContextValue = {
+  /** Convenience alias for currentGroup?.id ?? null. */
+  currentGroupId: string | null;
   currentGroup: CurrentGroup | null;
   /** Bumps when current_group_id changes so pages can refetch. */
   revision: number;
@@ -49,7 +52,17 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
       return;
     }
 
-    const { data } = await getCurrentGroup();
+    const { data: profile, error: profileError } = await getCurrentGroupId(
+      user.id,
+    );
+
+    if (profileError || !profile?.current_group_id) {
+      setCurrentGroup(null);
+      setLoading(false);
+      return;
+    }
+
+    const { data } = await getGroup(profile.current_group_id);
     setCurrentGroup(data);
     setLoading(false);
   }, [user]);
@@ -62,7 +75,18 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
       return;
     }
 
-    const { data } = await getCurrentGroup();
+    const { data: profile, error: profileError } = await getCurrentGroupId(
+      user.id,
+    );
+
+    if (profileError || !profile?.current_group_id) {
+      setCurrentGroup(null);
+      setLoading(false);
+      setRevision((value) => value + 1);
+      return;
+    }
+
+    const { data } = await getGroup(profile.current_group_id);
     setCurrentGroup(data);
     setLoading(false);
     setRevision((value) => value + 1);
@@ -105,8 +129,11 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
     [currentGroup?.id],
   );
 
+  const currentGroupId = currentGroup?.id ?? null;
+
   const value = useMemo<CurrentGroupContextValue>(
     () => ({
+      currentGroupId,
       currentGroup,
       revision,
       loading: authLoading || loading,
@@ -116,6 +143,7 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
     }),
     [
       authLoading,
+      currentGroupId,
       currentGroup,
       loading,
       refresh,

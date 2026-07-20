@@ -4,10 +4,11 @@ type RestaurantDetailRouteProps = {
   params: Promise<{ id: string }>;
 };
 
+export const runtime = "nodejs";
+
 export default async function RestaurantDetailRoute({
   params,
 }: RestaurantDetailRouteProps) {
   const { id } = await params;
-
   return <DetailPage restaurantId={id} />;
 }

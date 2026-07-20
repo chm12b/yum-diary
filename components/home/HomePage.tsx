@@ -16,30 +16,28 @@ import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 
 type HomeStatus = "loading" | "error" | "empty" | "hasData";
 
-function HomeContentSkeleton() {
+/** Skeleton only for the restaurant-dependent middle section. */
+function HomeEntriesSkeleton() {
   return (
-    <div className="animate-pulse px-5 pt-1 pb-10" aria-hidden>
-      <div className="h-4 w-28 rounded-full bg-border" />
-      <div className="mt-3 h-8 w-52 rounded-full bg-border" />
-      <div className="mt-6 h-[250px] w-full rounded-[1.5rem] bg-border/70" />
-      <div className="mx-auto mt-4 h-20 w-[300px] rounded-[1.75rem] bg-border" />
-      <div className="mt-[50px] flex flex-col gap-4">
-        <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
-        <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
-      </div>
+    <div
+      className="-mt-[40px] flex animate-pulse flex-col gap-4 px-5 pt-[50px]"
+      aria-hidden
+    >
+      <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
+      <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
     </div>
   );
 }
 
 export default function HomePage() {
-  const { revision } = useCurrentGroup();
+  const { revision, currentGroupId, loading: groupLoading } = useCurrentGroup();
   const [status, setStatus] = useState<HomeStatus>("loading");
   const [restaurants, setRestaurants] = useState<RestaurantRow[]>([]);
 
-  async function loadRestaurants() {
+  async function loadRestaurants(groupId: string) {
     setStatus("loading");
 
-    const { data, error } = await listRestaurants();
+    const { data, error } = await listRestaurants(groupId);
 
     if (error) {
       setRestaurants([]);
@@ -52,22 +50,36 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    void loadRestaurants();
-  }, [revision]);
+    if (groupLoading) {
+      return;
+    }
+
+    if (!currentGroupId) {
+      setRestaurants([]);
+      setStatus("empty");
+      return;
+    }
+
+    void loadRestaurants(currentGroupId);
+  }, [revision, currentGroupId, groupLoading]);
 
   return (
     <div className="home-grid-bg min-h-full">
       <TopBar />
+      <HomeGreeting />
+      <BunnyHero />
 
-      {status === "loading" ? <HomeContentSkeleton /> : null}
+      {status === "loading" || groupLoading ? <HomeEntriesSkeleton /> : null}
 
-      {status === "error" ? (
+      {!groupLoading && status === "error" ? (
         <section className="flex flex-col items-center gap-4 px-5 pt-16 pb-10 text-center">
           <p className="text-sm font-medium text-cocoa">載入餐廳失敗</p>
           <button
             type="button"
             onClick={() => {
-              void loadRestaurants();
+              if (currentGroupId) {
+                void loadRestaurants(currentGroupId);
+              }
             }}
             className="rounded-full bg-caramel px-6 py-2.5 text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.98]"
           >
@@ -76,25 +88,15 @@ export default function HomePage() {
         </section>
       ) : null}
 
-      {status === "empty" ? (
-        <>
-          <HomeGreeting />
-          <BunnyHero />
-          <RestaurantEmptyState />
-          <HomeSearchSection />
-        </>
+      {!groupLoading && status === "empty" ? <RestaurantEmptyState /> : null}
+
+      {!groupLoading && status === "hasData" ? (
+        <div aria-label={`已收藏 ${restaurants.length} 間餐廳`}>
+          <HomeEntryList />
+        </div>
       ) : null}
 
-      {status === "hasData" ? (
-        <>
-          <HomeGreeting />
-          <BunnyHero />
-          <div aria-label={`已收藏 ${restaurants.length} 間餐廳`}>
-            <HomeEntryList />
-          </div>
-          <HomeSearchSection />
-        </>
-      ) : null}
+      <HomeSearchSection />
     </div>
   );
 }

@@ -16,6 +16,7 @@ export function mapGooglePlaceToSearchItem(
     longitude: place.location?.longitude ?? null,
     rating: place.rating ?? null,
     reviewCount: place.userRatingCount ?? null,
+    photo: place.photos?.[0]?.name ?? null,
   };
 }
 

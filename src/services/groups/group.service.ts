@@ -328,6 +328,41 @@ export async function listMyGroups(): Promise<GroupResult<GroupListItem[]>> {
   };
 }
 
+/**
+ * Load a group by id (data access only — no auth / profile lookup).
+ */
+export async function getGroup(
+  groupId: string,
+): Promise<GroupResult<CurrentGroup | null>> {
+  const id = groupId.trim();
+  if (!id) {
+    return { data: null, error: null };
+  }
+
+  const supabase = createClient();
+  const { data: group, error: groupError } = await supabase
+    .from("groups")
+    .select("id, name, invite_code, reference_name, reference_lat, reference_lng")
+    .eq("id", id)
+    .single();
+
+  if (groupError) {
+    return { data: null, error: groupError };
+  }
+
+  return {
+    data: {
+      id: group.id,
+      name: group.name,
+      inviteCode: group.invite_code,
+      referenceName: group.reference_name,
+      referenceLat: group.reference_lat,
+      referenceLng: group.reference_lng,
+    },
+    error: null,
+  };
+}
+
 export async function getCurrentGroup(): Promise<
   GroupResult<CurrentGroup | null>
 > {
@@ -360,27 +395,7 @@ export async function getCurrentGroup(): Promise<
     return { data: null, error: null };
   }
 
-  const { data: group, error: groupError } = await supabase
-    .from("groups")
-    .select("id, name, invite_code, reference_name, reference_lat, reference_lng")
-    .eq("id", profile.current_group_id)
-    .single();
-
-  if (groupError) {
-    return { data: null, error: groupError };
-  }
-
-  return {
-    data: {
-      id: group.id,
-      name: group.name,
-      inviteCode: group.invite_code,
-      referenceName: group.reference_name,
-      referenceLat: group.reference_lat,
-      referenceLng: group.reference_lng,
-    },
-    error: null,
-  };
+  return getGroup(profile.current_group_id);
 }
 
 /**

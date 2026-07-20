@@ -16,7 +16,6 @@ import { mapRestaurantRecordToListItem } from "@/src/lib/map-restaurant-list-ite
 import { LIST_CATEGORY_FILTERS } from "@/src/lib/restaurants/category";
 import type { Restaurant } from "@/src/lib/restaurant-types";
 import { listFavorites } from "@/src/services/favorite";
-import { getCurrentGroup } from "@/src/services/groups/group.service";
 import { listRestaurants } from "@/src/services/restaurant";
 import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 
@@ -24,27 +23,28 @@ type LoadStatus = "loading" | "ready" | "error";
 
 export default function RestaurantListPage() {
   const router = useRouter();
-  const { revision } = useCurrentGroup();
+  const { revision, currentGroupId, currentGroup, loading: groupLoading } =
+    useCurrentGroup();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategoryId, setActiveCategoryId] = useState("all");
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
+  const referenceLat = currentGroup?.referenceLat ?? null;
+  const referenceLng = currentGroup?.referenceLng ?? null;
 
-  async function loadRestaurants() {
+  async function loadRestaurants(groupId: string) {
     setStatus("loading");
 
     try {
-      const [rows, groupResult, favorites] = await Promise.all([
-        listRestaurants(),
-        getCurrentGroup(),
+      const [rows, favorites] = await Promise.all([
+        listRestaurants(groupId),
         listFavorites(),
       ]);
       const reference =
-        groupResult.data?.referenceLat != null &&
-        groupResult.data?.referenceLng != null
+        referenceLat != null && referenceLng != null
           ? {
-              lat: groupResult.data.referenceLat,
-              lng: groupResult.data.referenceLng,
+              lat: referenceLat,
+              lng: referenceLng,
             }
           : null;
       const favoriteIds = new Set(
@@ -67,8 +67,18 @@ export default function RestaurantListPage() {
   }
 
   useEffect(() => {
-    void loadRestaurants();
-  }, [revision]);
+    if (groupLoading) {
+      return;
+    }
+
+    if (!currentGroupId) {
+      setRestaurants([]);
+      setStatus("ready");
+      return;
+    }
+
+    void loadRestaurants(currentGroupId);
+  }, [revision, currentGroupId, groupLoading, referenceLat, referenceLng]);
 
   const filteredRestaurants = useMemo(
     () =>
@@ -120,7 +130,9 @@ export default function RestaurantListPage() {
             <button
               type="button"
               onClick={() => {
-                void loadRestaurants();
+                if (currentGroupId) {
+                  void loadRestaurants(currentGroupId);
+                }
               }}
               className="rounded-full bg-caramel px-6 py-2.5 text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.98]"
             >

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import DetailActionBar from "@/components/restaurants/detail/DetailActionBar";
 import DetailHeader from "@/components/restaurants/detail/DetailHeader";
@@ -9,14 +9,17 @@ import Identity from "@/components/restaurants/detail/Identity";
 import MenuSection from "@/components/restaurants/detail/MenuSection";
 import MyRecordSection from "@/components/restaurants/detail/MyRecordSection";
 import RestaurantInfoList from "@/components/restaurants/detail/RestaurantInfoList";
+import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 import { mapRestaurantRecordToDetail } from "@/src/lib/map-restaurant-detail";
-import type { GeoPoint } from "@/src/lib/restaurants/distance";
+import {
+  distanceMetersOrZero,
+  type GeoPoint,
+} from "@/src/lib/restaurants/distance";
 import type { RestaurantDetail } from "@/src/lib/restaurant-types";
 import {
   isFavorite as getIsFavorite,
   toggleFavorite,
 } from "@/src/services/favorite";
-import { getCurrentGroup } from "@/src/services/groups/group.service";
 import { listProfileDisplayNames } from "@/src/services/profile/profile.service";
 import { listRestaurantRecords } from "@/src/services/record";
 import { listFirstRecordPhotoUrls } from "@/src/services/record-photo";
@@ -24,14 +27,15 @@ import {
   getRestaurant,
   GoogleSyncNotFoundError,
   syncRestaurantFromGoogle,
+  type RestaurantRecord,
 } from "@/src/services/restaurant";
-import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 
 type DetailPageProps = {
   restaurantId: string;
 };
 
 type LoadStatus = "loading" | "ready" | "not-found" | "error";
+type RecordsStatus = "loading" | "ready" | "error";
 
 type ToastState = {
   type: "success" | "error";
@@ -40,15 +44,48 @@ type ToastState = {
 
 const TOAST_MS = 1800;
 
+function referenceFromGroup(
+  currentGroup: {
+    referenceLat: number | null;
+    referenceLng: number | null;
+  } | null,
+): GeoPoint | null {
+  if (
+    currentGroup?.referenceLat != null &&
+    currentGroup?.referenceLng != null
+  ) {
+    return {
+      lat: currentGroup.referenceLat,
+      lng: currentGroup.referenceLng,
+    };
+  }
+  return null;
+}
+
 export default function DetailPage({ restaurantId }: DetailPageProps) {
-  const { revision } = useCurrentGroup();
+  const { revision, currentGroup } = useCurrentGroup();
+  const reference = useMemo(
+    () => referenceFromGroup(currentGroup),
+    [currentGroup],
+  );
+
   const [restaurant, setRestaurant] = useState<RestaurantDetail | null>(null);
+  const [restaurantRow, setRestaurantRow] = useState<RestaurantRecord | null>(
+    null,
+  );
   const [status, setStatus] = useState<LoadStatus>("loading");
+  const [recordsStatus, setRecordsStatus] = useState<RecordsStatus>("loading");
+  const [recordsReloadToken, setRecordsReloadToken] = useState(0);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavoriteResolved, setIsFavoriteResolved] = useState(false);
+  const [isFavoriteToggleLoading, setIsFavoriteToggleLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const toastTimerRef = useRef<number | null>(null);
-  const referenceRef = useRef<GeoPoint | null>(null);
+  const restaurantRowRef = useRef<RestaurantRecord | null>(null);
+  const referenceRef = useRef<GeoPoint | null>(reference);
+  restaurantRowRef.current = restaurantRow;
+  referenceRef.current = reference;
 
   useEffect(() => {
     return () => {
@@ -69,85 +106,239 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
     }, TOAST_MS);
   }
 
-
-  async function loadRestaurant() {
+  /** Layer 1: restaurant core only — unlock main UI. */
+  async function loadRestaurantCore() {
     setStatus("loading");
+    setRestaurant(null);
+    setRestaurantRow(null);
+    setRecordsStatus("loading");
+    setIsFavorite(false);
+    setIsFavoriteResolved(false);
 
     try {
-      const [row, diningRecords, groupResult, favorite] = await Promise.all([
-        getRestaurant(restaurantId),
-        listRestaurantRecords(restaurantId),
-        getCurrentGroup(),
-        getIsFavorite(restaurantId),
-      ]);
-
-      const firstPhotoUrls = await listFirstRecordPhotoUrls(
-        diningRecords.map((record) => record.id),
-      );
-      const authorNames = await listProfileDisplayNames(
-        diningRecords.map((record) => record.user_id),
-      );
-
-      referenceRef.current =
-        groupResult.data?.referenceLat != null &&
-        groupResult.data?.referenceLng != null
-          ? {
-              lat: groupResult.data.referenceLat,
-              lng: groupResult.data.referenceLng,
-            }
-          : null;
+      const row = await getRestaurant(restaurantId);
 
       if (!row) {
         setRestaurant(null);
+        setRestaurantRow(null);
         setStatus("not-found");
+        setRecordsStatus("ready");
+        setIsFavoriteResolved(true);
         return;
       }
 
+      setRestaurantRow(row);
       setRestaurant(
-        mapRestaurantRecordToDetail(
-          row,
-          diningRecords,
-          referenceRef.current,
-          firstPhotoUrls,
-          authorNames,
-          favorite,
-        ),
+        mapRestaurantRecordToDetail(row, [], reference, new Map(), new Map(), false),
       );
       setStatus("ready");
-    } catch {
+    } catch (error) {
+      console.error("Failed to load restaurant", { restaurantId, error });
       setRestaurant(null);
+      setRestaurantRow(null);
       setStatus("error");
+      setRecordsStatus("ready");
+      setIsFavoriteResolved(true);
     }
   }
 
+  /** Layer 2: favorite — does not block main UI. */
+  useEffect(() => {
+    if (status !== "ready" || !restaurantId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadFavorite() {
+      try {
+        const favorite = await getIsFavorite(restaurantId);
+        if (!cancelled) {
+          setIsFavorite(favorite);
+          setRestaurant((current) =>
+            current ? { ...current, isFavorite: favorite } : current,
+          );
+        }
+      } catch (error) {
+        console.error("Failed to load favorite state", { restaurantId, error });
+        if (!cancelled) {
+          setIsFavorite(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsFavoriteResolved(true);
+        }
+      }
+    }
+
+    void loadFavorite();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, restaurantId, revision]);
+
+  /** Layer 4: diary records / photos / author names. */
+  useEffect(() => {
+    if (status !== "ready") {
+      return;
+    }
+
+    const row = restaurantRowRef.current;
+    if (!row) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadRecords() {
+      setRecordsStatus("loading");
+
+      try {
+        let diningRecords: Awaited<
+          ReturnType<typeof listRestaurantRecords>
+        > = [];
+        try {
+          diningRecords = await listRestaurantRecords(restaurantId);
+        } catch (error) {
+          console.error("Failed to load restaurant records", {
+            restaurantId,
+            error,
+          });
+          diningRecords = [];
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        let firstPhotoUrls = new Map<string, string>();
+        try {
+          firstPhotoUrls = await listFirstRecordPhotoUrls(
+            diningRecords.map((record) => record.id),
+          );
+        } catch (error) {
+          console.error("Failed to load first record photo urls", {
+            restaurantId,
+            error,
+          });
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        let authorNames = new Map<string, string>();
+        try {
+          authorNames = await listProfileDisplayNames(
+            diningRecords.map((record) => record.user_id),
+          );
+        } catch (error) {
+          console.error("Failed to load record author names", {
+            restaurantId,
+            error,
+          });
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        const latestRow = restaurantRowRef.current;
+        if (!latestRow) {
+          return;
+        }
+
+        setRestaurant((current) => {
+          if (!current) {
+            return current;
+          }
+
+          return mapRestaurantRecordToDetail(
+            latestRow,
+            diningRecords,
+            referenceRef.current,
+            firstPhotoUrls,
+            authorNames,
+            current.isFavorite,
+          );
+        });
+        setRecordsStatus("ready");
+      } catch (error) {
+        console.error("Failed to load restaurant diary section", {
+          restaurantId,
+          error,
+        });
+        if (!cancelled) {
+          setRecordsStatus("error");
+        }
+      }
+    }
+
+    void loadRecords();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, restaurantId, revision, recordsReloadToken]);
+
+  /** Keep distance in sync when Context reference arrives/changes. */
+  useEffect(() => {
+    if (!restaurantRow || status !== "ready") {
+      return;
+    }
+
+    const nextDistance = distanceMetersOrZero(
+      { lat: restaurantRow.latitude, lng: restaurantRow.longitude },
+      reference,
+    );
+
+    setRestaurant((current) => {
+      if (!current || current.distanceMeters === nextDistance) {
+        return current;
+      }
+      return { ...current, distanceMeters: nextDistance };
+    });
+  }, [reference, restaurantRow, status]);
+
   async function handleSyncGoogle() {
-    if (isSyncing) {
+    if (isSyncing || !restaurantRow) {
       return;
     }
 
     setIsSyncing(true);
 
     try {
-      const [updated, diningRecords] = await Promise.all([
-        syncRestaurantFromGoogle(restaurantId),
-        listRestaurantRecords(restaurantId),
-      ]);
+      const updated = await syncRestaurantFromGoogle(restaurantId);
+      setRestaurantRow(updated);
+
+      let diningRecords: Awaited<
+        ReturnType<typeof listRestaurantRecords>
+      > = [];
+      try {
+        diningRecords = await listRestaurantRecords(restaurantId);
+      } catch {
+        diningRecords = [];
+      }
+
       const firstPhotoUrls = await listFirstRecordPhotoUrls(
         diningRecords.map((record) => record.id),
       );
       const authorNames = await listProfileDisplayNames(
         diningRecords.map((record) => record.user_id),
       );
+
       setRestaurant(
         mapRestaurantRecordToDetail(
           updated,
           diningRecords,
-          referenceRef.current,
+          reference,
           firstPhotoUrls,
           authorNames,
-          restaurant?.isFavorite ?? false,
+          isFavorite,
         ),
       );
+      setRecordsStatus("ready");
       showToast("success", "✨ 已同步最新 Google 資料");
     } catch (error) {
       const isNotFound =
@@ -165,18 +356,20 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
   }
 
   async function handleToggleFavorite() {
-    if (!restaurant || isFavoriteLoading) {
+    if (!restaurant || isFavoriteToggleLoading || !isFavoriteResolved) {
       return;
     }
 
-    const previous = restaurant.isFavorite;
-    setIsFavoriteLoading(true);
+    const previous = isFavorite;
+    setIsFavoriteToggleLoading(true);
+    setIsFavorite(!previous);
     setRestaurant((current) =>
       current ? { ...current, isFavorite: !previous } : current,
     );
 
     try {
       const favorite = await toggleFavorite(restaurant.id);
+      setIsFavorite(favorite);
       setRestaurant((current) =>
         current ? { ...current, isFavorite: favorite } : current,
       );
@@ -185,17 +378,18 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         favorite ? "已加入我的收藏。" : "已取消我的收藏。",
       );
     } catch {
+      setIsFavorite(previous);
       setRestaurant((current) =>
         current ? { ...current, isFavorite: previous } : current,
       );
       showToast("error", "更新收藏失敗，請稍後再試。");
     } finally {
-      setIsFavoriteLoading(false);
+      setIsFavoriteToggleLoading(false);
     }
   }
 
   useEffect(() => {
-    void loadRestaurant();
+    void loadRestaurantCore();
   }, [restaurantId, revision]);
 
   if (status === "loading") {
@@ -226,7 +420,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
           <button
             type="button"
             onClick={() => {
-              void loadRestaurant();
+              void loadRestaurantCore();
             }}
             className="rounded-full bg-caramel px-6 py-2.5 text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.98]"
           >
@@ -257,8 +451,8 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
   return (
     <div className="home-grid-bg min-h-full pb-6">
       <DetailHeader
-        isFavorite={restaurant.isFavorite}
-        isFavoriteLoading={isFavoriteLoading}
+        isFavorite={isFavorite}
+        isFavoriteLoading={isFavoriteToggleLoading || !isFavoriteResolved}
         restaurantId={restaurant.id}
         canSyncGoogle={Boolean(restaurant.googlePlaceId)}
         isSyncing={isSyncing}
@@ -275,7 +469,13 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         restaurantId={restaurant.id}
         restaurantName={restaurant.name}
       />
-      <MyRecordSection restaurant={restaurant} />
+      <MyRecordSection
+        restaurant={restaurant}
+        status={recordsStatus}
+        onRetry={() => {
+          setRecordsReloadToken((token) => token + 1);
+        }}
+      />
       <DetailActionBar
         restaurantId={restaurant.id}
         restaurantName={restaurant.name}
