@@ -23,18 +23,25 @@ function isAuthNextPath(pathname: string) {
   return isJoinPath(pathname) || isRestaurantDetailPath(pathname);
 }
 
+function isPublicAuthPath(pathname: string) {
+  return pathname === "/auth" || isPasswordResetPath(pathname);
+}
+
 export default function AppStartup() {
   const router = useRouter();
   const pathname = usePathname();
   const { loading, session, getPostLoginPath } = useAuth();
-  const hasResolvedRef = useRef(false);
+  const hasResolvedStartupRef = useRef(false);
+  const prevSessionRef = useRef<typeof session | undefined>(undefined);
 
+  // One-shot startup: restore session path (home / onboarding / auth).
   useEffect(() => {
-    if (loading || hasResolvedRef.current) {
+    if (loading || hasResolvedStartupRef.current) {
       return;
     }
 
-    hasResolvedRef.current = true;
+    hasResolvedStartupRef.current = true;
+    prevSessionRef.current = session;
 
     async function resolveStartupPath() {
       if (!session) {
@@ -43,19 +50,13 @@ export default function AppStartup() {
           return;
         }
 
-        if (
-          pathname !== "/auth" &&
-          !isPasswordResetPath(pathname)
-        ) {
+        if (!isPublicAuthPath(pathname)) {
           router.replace("/auth");
         }
         return;
       }
 
-      if (
-        isAuthNextPath(pathname) ||
-        isPasswordResetPath(pathname)
-      ) {
+      if (isAuthNextPath(pathname) || isPasswordResetPath(pathname)) {
         return;
       }
 
@@ -75,6 +76,37 @@ export default function AppStartup() {
 
     void resolveStartupPath();
   }, [loading, session, pathname, router, getPostLoginPath]);
+
+  // Ongoing: redirect to login when session is lost (logout / expiry).
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
+    const prevSession = prevSessionRef.current;
+    prevSessionRef.current = session;
+
+    // Only react after we have observed at least one auth state.
+    if (prevSession === undefined) {
+      return;
+    }
+
+    // Session still present, or never had a session to lose.
+    if (session || !prevSession) {
+      return;
+    }
+
+    if (isPublicAuthPath(pathname)) {
+      return;
+    }
+
+    if (isAuthNextPath(pathname)) {
+      router.replace(`/auth?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
+    router.replace("/auth");
+  }, [loading, session, pathname, router]);
 
   return null;
 }

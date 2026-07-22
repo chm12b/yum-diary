@@ -1,5 +1,13 @@
+"use client";
+
+import { useCallback, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronRight } from "lucide-react";
+
+import LogoutConfirmDialog from "@/components/settings/LogoutConfirmDialog";
+import { useAuth } from "@/src/hooks/useAuth";
+import { clearClientAuthState } from "@/src/services/auth/clearClientAuthState";
 
 type SettingsRowProps = {
   emoji: string;
@@ -75,6 +83,32 @@ function RowDivider() {
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const { signOut } = useAuth();
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [logoutSubmitting, setLogoutSubmitting] = useState(false);
+
+  const handleLogoutConfirm = useCallback(async () => {
+    if (logoutSubmitting) {
+      return;
+    }
+
+    setLogoutSubmitting(true);
+    try {
+      const { error } = await signOut();
+      if (error) {
+        setLogoutSubmitting(false);
+        return;
+      }
+
+      clearClientAuthState();
+      setLogoutOpen(false);
+      router.replace("/auth");
+    } catch {
+      setLogoutSubmitting(false);
+    }
+  }, [logoutSubmitting, router, signOut]);
+
   return (
     <div className="home-grid-bg min-h-full">
       <header className="px-5 pt-4 pb-2">
@@ -108,7 +142,33 @@ export default function SettingsPage() {
             href="/settings/about"
           />
         </div>
+
+        <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
+          <button
+            type="button"
+            onClick={() => setLogoutOpen(true)}
+            className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-cream-bg/40 active:bg-cream-bg/60"
+          >
+            <span className="text-base leading-none" aria-hidden>
+              🚪
+            </span>
+            <span className="min-w-0 flex-1 text-left text-base font-medium text-red-600">
+              登出
+            </span>
+          </button>
+        </div>
       </section>
+
+      <LogoutConfirmDialog
+        open={logoutOpen}
+        submitting={logoutSubmitting}
+        onClose={() => {
+          if (!logoutSubmitting) {
+            setLogoutOpen(false);
+          }
+        }}
+        onConfirm={handleLogoutConfirm}
+      />
     </div>
   );
 }

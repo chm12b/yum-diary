@@ -131,6 +131,18 @@ export function saveDecidePreferences(filters: DecideFilters): void {
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(filters));
 }
 
+export function clearDecidePreferences(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Ignore quota / private-mode failures during logout cleanup.
+  }
+}
+
 export function sameSelectedCategories(
   a: readonly AppCategory[],
   b: readonly AppCategory[],
