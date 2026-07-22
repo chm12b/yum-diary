@@ -148,17 +148,19 @@ export default function RecordPhotoGallery({
                 }
                 onSelect(index);
               }}
-              className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-border bg-rice-white shadow-soft transition-transform active:scale-[0.98]"
+              className="block w-full rounded-xl border border-border bg-rice-white p-0 shadow-soft transition-transform active:scale-[0.98]"
             >
-              <Image
-                src={photo.url}
-                alt={`照片 ${index + 1}`}
-                fill
-                sizes="112px"
-                className="object-cover"
-                draggable={false}
-                unoptimized
-              />
+              <span className="relative block aspect-[3/4] w-full overflow-hidden rounded-xl">
+                <Image
+                  src={photo.url}
+                  alt={`照片 ${index + 1}`}
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                  draggable={false}
+                  unoptimized
+                />
+              </span>
             </button>
             <p className="mt-1.5 text-center text-xs text-cocoa">
               照片 {index + 1}

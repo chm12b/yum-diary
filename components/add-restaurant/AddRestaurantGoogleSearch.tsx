@@ -1,11 +1,9 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import AddRestaurantBunnyHero from "@/components/add-restaurant/AddRestaurantBunnyHero";
-import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
-import { listRestaurants } from "@/src/services/restaurant";
 import type {
   PlaceSearchItem,
   PlacesApiResponse,
@@ -28,13 +26,10 @@ export default function AddRestaurantGoogleSearch({
   fillNotice = false,
   detailLoading = false,
 }: AddRestaurantGoogleSearchProps) {
-  const { currentGroupId, loading: groupLoading } = useCurrentGroup();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PlaceSearchItem[]>([]);
   const [status, setStatus] = useState<SearchStatus>("idle");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
-  const [hideImported, setHideImported] = useState(true);
-  const [importedPlaceIds, setImportedPlaceIds] = useState<string[]>([]);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -102,41 +97,6 @@ export default function AddRestaurantGoogleSearch({
     };
   }, [query]);
 
-  useEffect(() => {
-    if (groupLoading) {
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadImportedPlaceIds() {
-      if (!currentGroupId) {
-        setImportedPlaceIds([]);
-        return;
-      }
-
-      try {
-        const restaurants = await listRestaurants(currentGroupId);
-        const ids = restaurants
-          .map((r) => r.google_place_id?.trim() ?? "")
-          .filter((id) => id.length > 0);
-
-        if (cancelled) return;
-        setImportedPlaceIds(Array.from(new Set(ids)));
-      } catch {
-        // If we cannot load, fall back to showing everything.
-        if (cancelled) return;
-        setImportedPlaceIds([]);
-      }
-    }
-
-    void loadImportedPlaceIds();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentGroupId, groupLoading]);
-
   function handleSelect(place: PlaceSearchItem) {
     setSelectedPlaceId(place.id);
     onSelectPlaceId?.(place.id);
@@ -146,20 +106,6 @@ export default function AddRestaurantGoogleSearch({
 
   const showDropdown =
     query.trim().length >= MIN_QUERY_LENGTH && status !== "idle";
-
-  const importedPlaceIdSet = useMemo(
-    () => new Set(importedPlaceIds),
-    [importedPlaceIds],
-  );
-  const totalCount = results.length;
-  const importedCount = results.filter((place) =>
-    importedPlaceIdSet.has(place.id),
-  ).length;
-  const availableCount = totalCount - importedCount;
-
-  const visibleResults = hideImported
-    ? results.filter((place) => !importedPlaceIdSet.has(place.id))
-    : results;
 
   return (
     <section className="px-5 pt-1 pb-3">
@@ -234,80 +180,38 @@ export default function AddRestaurantGoogleSearch({
           ) : null}
 
           {status === "ready" ? (
-            <>
-              <div className="px-3 pb-2 pt-3">
-                <div className="flex flex-col gap-2">
-                  <label className="flex cursor-pointer items-center gap-3 text-sm text-deep-brown">
-                    <input
-                      type="checkbox"
-                      checked={hideImported}
-                      onChange={(event) =>
-                        setHideImported(event.target.checked)
-                      }
-                      className="h-5 w-5 accent-caramel"
-                    />
-                    ☑ 隱藏已匯入餐廳
-                  </label>
-
-                  <div className="text-[11px] leading-relaxed text-text-secondary/80">
-                    <div>附近找到 {totalCount} 間餐廳。</div>
-                    {hideImported ? (
-                      <div>還有 {availableCount} 間可加入。</div>
+            <ul className="divide-y divide-border/70">
+              {results.map((place) => (
+                <li key={place.id}>
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={selectedPlaceId === place.id}
+                    onClick={() => {
+                      handleSelect(place);
+                    }}
+                    className="flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition-colors hover:bg-cream-bg"
+                  >
+                    <span className="text-sm font-medium text-deep-brown">
+                      {place.name}
+                    </span>
+                    {place.address ? (
+                      <span className="text-[11px] text-text-secondary">
+                        {place.address}
+                      </span>
                     ) : null}
-                  </div>
-                </div>
-              </div>
-
-              <ul className="divide-y divide-border/70">
-                {visibleResults.map((place) => {
-                  const isImported = importedPlaceIdSet.has(place.id);
-                  const isDisabled = !hideImported && isImported;
-
-                  return (
-                    <li key={place.id}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={selectedPlaceId === place.id}
-                        disabled={isDisabled}
-                        onClick={() => {
-                          if (isDisabled) return;
-                          handleSelect(place);
-                        }}
-                        className={`flex w-full flex-col items-start gap-0.5 px-3 py-2.5 text-left transition-colors ${
-                          isDisabled
-                            ? "cursor-not-allowed opacity-70"
-                            : "hover:bg-cream-bg"
-                        }`}
-                      >
-                        <span className="text-sm font-medium text-deep-brown">
-                          {place.name}
-                        </span>
-                        {place.address ? (
-                          <span className="text-[11px] text-text-secondary">
-                            {place.address}
-                          </span>
-                        ) : null}
-                        {place.rating != null ? (
-                          <span className="text-[11px] text-caramel">
-                            ★ {place.rating.toFixed(1)}
-                            {place.reviewCount != null
-                              ? `（${place.reviewCount}）`
-                              : ""}
-                          </span>
-                        ) : null}
-
-                        {!hideImported && isImported ? (
-                          <span className="mt-1 text-[11px] font-medium text-cocoa">
-                            ✓ 已加入
-                          </span>
-                        ) : null}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </>
+                    {place.rating != null ? (
+                      <span className="text-[11px] text-caramel">
+                        ★ {place.rating.toFixed(1)}
+                        {place.reviewCount != null
+                          ? `（${place.reviewCount}）`
+                          : ""}
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              ))}
+            </ul>
           ) : null}
         </div>
       ) : null}

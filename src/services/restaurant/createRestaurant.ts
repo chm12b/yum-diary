@@ -20,6 +20,23 @@ const METADATA_COLUMNS = [
   "price_level",
 ] as const;
 
+export const DUPLICATE_RESTAURANT_MESSAGE = "此餐廳已存在於目前群組。";
+
+function isUniqueViolation(error: {
+  code?: string;
+  message?: string;
+}): boolean {
+  if (error.code === "23505") {
+    return true;
+  }
+  const message = error.message?.toLowerCase() ?? "";
+  return (
+    message.includes("duplicate key") ||
+    message.includes("unique constraint") ||
+    message.includes("restaurants_group_id_google_place_id_key")
+  );
+}
+
 /**
  * Insert a restaurant into the current user's group.
  * Throws on validation / auth / database errors.
@@ -51,6 +68,25 @@ export async function createRestaurant(
     throw new Error("Not authenticated");
   }
 
+  const googlePlaceId = optionalText(input.googlePlaceId);
+
+  if (googlePlaceId) {
+    const { data: existing, error: existingError } = await supabase
+      .from("restaurants")
+      .select("id")
+      .eq("group_id", groupId)
+      .eq("google_place_id", googlePlaceId)
+      .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
+
+    if (existing) {
+      throw new Error(DUPLICATE_RESTAURANT_MESSAGE);
+    }
+  }
+
   const coreRow: RestaurantInsert = {
     group_id: groupId,
     created_by: user.id,
@@ -61,7 +97,7 @@ export async function createRestaurant(
     website_url: optionalText(input.website),
     notes: optionalText(input.note),
     business_hours: normalizeBusinessHours(input.businessHours),
-    google_place_id: optionalText(input.googlePlaceId),
+    google_place_id: googlePlaceId,
     latitude: input.latitude ?? null,
     longitude: input.longitude ?? null,
     price_min: input.priceMin ?? null,
@@ -94,6 +130,9 @@ export async function createRestaurant(
   }
 
   if (error) {
+    if (isUniqueViolation(error)) {
+      throw new Error(DUPLICATE_RESTAURANT_MESSAGE);
+    }
     throw error;
   }
 

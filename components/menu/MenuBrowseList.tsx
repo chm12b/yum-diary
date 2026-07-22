@@ -1,0 +1,247 @@
+"use client";
+
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+
+import type { MenuItem } from "@/src/services/menu-item";
+
+type MenuBrowseListProps = {
+  items: MenuItem[];
+};
+
+const ALL_CATEGORY = "全部";
+const DRAG_THRESHOLD_PX = 5;
+
+function formatPrice(price: number | null): string {
+  if (price === null) {
+    return "—";
+  }
+  return `$${price}`;
+}
+
+/**
+ * Read-only menu list with horizontally scrollable category chips.
+ * Preserves display_order; chips filter without reordering.
+ */
+export default function MenuBrowseList({ items }: MenuBrowseListProps) {
+  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const chipScrollRef = useRef<HTMLDivElement | null>(null);
+
+  const isDraggingRef = useRef(false);
+  const draggedRef = useRef(false);
+  const dragStartXRef = useRef(0);
+  const dragStartScrollRef = useRef(0);
+
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    for (const item of items) {
+      if (!seen.has(item.category)) {
+        seen.add(item.category);
+        ordered.push(item.category);
+      }
+    }
+    return ordered;
+  }, [items]);
+
+  useEffect(() => {
+    const el = chipScrollRef.current;
+    if (!el) {
+      return;
+    }
+
+    const update = () => {
+      setCanScrollLeft(el.scrollLeft > 1);
+      setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) {
+        return;
+      }
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+        return;
+      }
+      const atStart = el.scrollLeft <= 0;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1;
+      if ((event.deltaY < 0 && atStart) || (event.deltaY > 0 && atEnd)) {
+        return;
+      }
+      el.scrollLeft += event.deltaY;
+      event.preventDefault();
+    };
+
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    el.addEventListener("wheel", onWheel, { passive: false });
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", update);
+      el.removeEventListener("wheel", onWheel);
+      observer.disconnect();
+    };
+  }, [categories.length, items.length]);
+
+  const visibleItems =
+    selectedCategory === ALL_CATEGORY
+      ? items
+      : items.filter((item) => item.category === selectedCategory);
+
+  function scrollByStep(direction: 1 | -1) {
+    const el = chipScrollRef.current;
+    if (!el) {
+      return;
+    }
+    el.scrollBy({
+      left: direction * Math.max(el.clientWidth * 0.6, 120),
+      behavior: "smooth",
+    });
+  }
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    const el = chipScrollRef.current;
+    if (!el) {
+      return;
+    }
+    isDraggingRef.current = true;
+    draggedRef.current = false;
+    dragStartXRef.current = event.clientX;
+    dragStartScrollRef.current = el.scrollLeft;
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const el = chipScrollRef.current;
+    if (!isDraggingRef.current || !el) {
+      return;
+    }
+    const delta = event.clientX - dragStartXRef.current;
+    if (Math.abs(delta) > DRAG_THRESHOLD_PX) {
+      draggedRef.current = true;
+    }
+    el.scrollLeft = dragStartScrollRef.current - delta;
+  }
+
+  function endDrag() {
+    isDraggingRef.current = false;
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-rice-white/70 px-4 py-12 text-center shadow-soft">
+        <p className="text-sm text-cocoa/70">尚未新增菜單品項</p>
+        <p className="text-xs text-cocoa/50">可至菜單管理匯入</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="relative">
+        {canScrollLeft ? (
+          <button
+            type="button"
+            aria-label="向左瀏覽分類"
+            onClick={() => scrollByStep(-1)}
+            className="absolute top-1/2 left-0 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-rice-white/95 text-cocoa shadow-card transition-transform active:scale-95"
+          >
+            <ChevronLeft className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+        ) : null}
+
+        <div
+          ref={chipScrollRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endDrag}
+          onPointerLeave={endDrag}
+          onPointerCancel={endDrag}
+          className={`flex touch-pan-x gap-2 overflow-x-auto overscroll-x-contain pb-1 select-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+            canScrollLeft || canScrollRight
+              ? "cursor-grab active:cursor-grabbing"
+              : ""
+          }`}
+        >
+          {[ALL_CATEGORY, ...categories].map((category) => {
+            const active = category === selectedCategory;
+            return (
+              <button
+                key={category}
+                type="button"
+                onClick={() => {
+                  if (draggedRef.current) {
+                    return;
+                  }
+                  setSelectedCategory(category);
+                }}
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold whitespace-nowrap transition-colors active:scale-[0.98] ${
+                  active
+                    ? "bg-caramel text-rice-white shadow-button"
+                    : "border border-border bg-cream-bg/60 text-deep-brown hover:bg-cream-bg"
+                }`}
+              >
+                {category}
+              </button>
+            );
+          })}
+        </div>
+
+        {canScrollRight ? (
+          <button
+            type="button"
+            aria-label="向右瀏覽分類"
+            onClick={() => scrollByStep(1)}
+            className="absolute top-1/2 right-0 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-rice-white/95 text-cocoa shadow-card transition-transform active:scale-95"
+          >
+            <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+        ) : null}
+
+        {canScrollRight ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-cream-bg to-transparent"
+          />
+        ) : null}
+        {canScrollLeft ? (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-cream-bg to-transparent"
+          />
+        ) : null}
+      </div>
+
+      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
+        {visibleItems.map((item) => (
+          <li
+            key={item.id}
+            className="flex items-baseline justify-between gap-3 px-4 py-3"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-deep-brown">
+                {item.name}
+              </p>
+              {selectedCategory === ALL_CATEGORY ? (
+                <p className="mt-0.5 text-xs text-text-secondary">
+                  {item.category}
+                </p>
+              ) : null}
+            </div>
+            <p className="shrink-0 font-mono text-sm text-cocoa">
+              {formatPrice(item.price)}
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

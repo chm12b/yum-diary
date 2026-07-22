@@ -152,17 +152,24 @@ export default function MenuGallery({
                 }
                 onSelect(index);
               }}
-              className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-border bg-rice-white shadow-soft transition-transform active:scale-[0.98]"
+              className="block w-full rounded-xl border border-border bg-rice-white p-0 shadow-soft transition-transform active:scale-[0.98]"
             >
-              <Image
-                src={photo.url}
-                alt={`${restaurantName} 菜單 ${index + 1}`}
-                fill
-                sizes="112px"
-                className="object-cover"
-                draggable={false}
-                unoptimized
-              />
+              {/*
+                Image `fill` must sit in a sized block container.
+                Putting it directly on <button> collapses height in some browsers
+                (broken-icon + alt text), even when the public URL is valid.
+              */}
+              <span className="relative block aspect-[3/4] w-full overflow-hidden rounded-xl">
+                <Image
+                  src={photo.url}
+                  alt={`${restaurantName} 菜單 ${index + 1}`}
+                  fill
+                  sizes="112px"
+                  className="object-cover"
+                  draggable={false}
+                  unoptimized
+                />
+              </span>
             </button>
             <p className="mt-1.5 text-center text-xs text-cocoa">
               菜單 {index + 1}

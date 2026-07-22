@@ -11,8 +11,12 @@ import AddRestaurantFormCard, {
 } from "@/components/add-restaurant/AddRestaurantFormCard";
 import AddRestaurantGoogleSearch from "@/components/add-restaurant/AddRestaurantGoogleSearch";
 import AddRestaurantHeader from "@/components/add-restaurant/AddRestaurantHeader";
+import EditMenuEntrySection from "@/components/add-restaurant/EditMenuEntrySection";
 import MenuManagerSection from "@/components/add-restaurant/MenuManagerSection";
+import MenuItemsImportPanel from "@/components/add-restaurant/MenuItemsImportPanel";
 import RestaurantNotesCard from "@/components/add-restaurant/RestaurantNotesCard";
+import WizardMenuStepFooter from "@/components/add-restaurant/WizardMenuStepFooter";
+import WizardStepProgress from "@/components/add-restaurant/WizardStepProgress";
 import type {
   BusinessHoursPeriodRow,
   PlaceDetailItem,
@@ -41,6 +45,39 @@ const SUCCESS_TOAST_MS = 1200;
 
 function isBlank(value: string): boolean {
   return value.trim().length === 0;
+}
+
+function resolveSaveErrorMessage(error: unknown, isEdit: boolean): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "23505"
+  ) {
+    return "此餐廳已存在於目前群組。";
+  }
+
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof (error as { message?: unknown }).message === "string" &&
+    (error as { message: string }).message.trim()
+  ) {
+    const raw = (error as { message: string }).message;
+    if (
+      raw.toLowerCase().includes("duplicate") ||
+      raw.toLowerCase().includes("unique")
+    ) {
+      return "此餐廳已存在於目前群組。";
+    }
+  }
+
+  return isEdit ? "更新失敗，請稍後再試" : "新增失敗，請稍後再試";
 }
 
 type ToastState = {
@@ -92,6 +129,10 @@ export default function AddRestaurantPage({
   const [isLoadingRestaurant, setIsLoadingRestaurant] = useState(isEdit);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
+  const [wizardStep, setWizardStep] = useState<1 | 2>(1);
+  const [createdRestaurantId, setCreatedRestaurantId] = useState<string | null>(
+    null,
+  );
   const noticeTimerRef = useRef<number | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -362,24 +403,24 @@ export default function AddRestaurantPage({
         }
       }
 
-      showToast("success", "餐廳已加入收藏！");
-
-      await new Promise((resolve) => {
-        window.setTimeout(resolve, SUCCESS_TOAST_MS);
-      });
-
-      router.back();
+      setCreatedRestaurantId(created.id);
+      setWizardStep(2);
+      showToast("success", "餐廳已建立！");
     } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : isEdit
-            ? "更新失敗，請稍後再試"
-            : "新增失敗，請稍後再試";
+      const message = resolveSaveErrorMessage(error, isEdit);
       showToast("error", message);
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function finishWizard() {
+    const id = createdRestaurantId;
+    if (!id) {
+      router.push("/restaurants");
+      return;
+    }
+    router.push(`/restaurants/${id}`);
   }
 
   if (isEdit && loadError) {
@@ -401,12 +442,50 @@ export default function AddRestaurantPage({
 
   return (
     <div className="home-grid-bg min-h-full">
-      <AddRestaurantHeader title={isEdit ? "編輯餐廳" : "新增餐廳"} />
+      <AddRestaurantHeader
+        title={
+          isEdit
+            ? "編輯餐廳"
+            : wizardStep === 2
+              ? "新增菜單（選填）"
+              : "新增餐廳"
+        }
+      />
+      {!isEdit ? <WizardStepProgress currentStep={wizardStep} /> : null}
       {isLoadingRestaurant ? (
         <div className="animate-pulse space-y-4 px-5 pt-4 pb-8" aria-hidden>
           <div className="h-12 w-full rounded-2xl bg-border/80" />
           <div className="h-72 w-full rounded-2xl bg-border/70" />
         </div>
+      ) : !isEdit && wizardStep === 2 && createdRestaurantId ? (
+        <>
+          <section className="px-5 pt-3 pb-2">
+            <p className="text-center text-sm leading-relaxed text-text-secondary">
+              餐廳已建立。
+              <br />
+              現在可以新增菜單照片或匯入品項，
+              <br />
+              之後也可以隨時補上。
+            </p>
+          </section>
+          <section className="px-5 pb-4">
+            <div className="overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
+              <MenuManagerSection
+                restaurantId={createdRestaurantId}
+                restaurantName={name}
+                onToast={showToast}
+              />
+              <MenuItemsImportPanel
+                restaurantId={createdRestaurantId}
+                onToast={showToast}
+              />
+            </div>
+          </section>
+          <WizardMenuStepFooter
+            onSkip={finishWizard}
+            onComplete={finishWizard}
+          />
+        </>
       ) : (
         <>
           {!isEdit ? (
@@ -487,11 +566,7 @@ export default function AddRestaurantPage({
               {isEdit && restaurantId ? (
                 <>
                   <FormDivider />
-                  <MenuManagerSection
-                    restaurantId={restaurantId}
-                    restaurantName={name}
-                    onToast={showToast}
-                  />
+                  <EditMenuEntrySection restaurantId={restaurantId} />
                 </>
               ) : null}
               <FormDivider />
@@ -503,8 +578,8 @@ export default function AddRestaurantPage({
               void handleSubmit();
             }}
             isSubmitting={isSubmitting}
-            submitLabel={isEdit ? "儲存修改" : "儲存餐廳"}
-            submittingLabel={isEdit ? "儲存中..." : "新增中..."}
+            submitLabel={isEdit ? "儲存修改" : "下一步"}
+            submittingLabel={isEdit ? "儲存中..." : "建立中..."}
           />
         </>
       )}

@@ -5,6 +5,10 @@ import type {
 
 const PLACES_API_BASE = "https://places.googleapis.com/v1";
 
+/** Prefer Traditional Chinese place names / addresses across all Places calls. */
+const PLACES_LANGUAGE_CODE = "zh-TW";
+const PLACES_REGION_CODE = "TW";
+
 export const SEARCH_TEXT_FIELD_MASK = [
   "places.id",
   "places.displayName",
@@ -72,16 +76,33 @@ export async function fetchPlacesApi<
   }
 
   let response: Response;
+  const method = options.method ?? "POST";
+
+  let url = `${PLACES_API_BASE}${path}`;
+  let body: Record<string, unknown> | undefined = options.body;
+
+  if (method === "GET") {
+    const separator = path.includes("?") ? "&" : "?";
+    url = `${url}${separator}languageCode=${encodeURIComponent(PLACES_LANGUAGE_CODE)}&regionCode=${encodeURIComponent(PLACES_REGION_CODE)}`;
+  } else {
+    body = {
+      ...(options.body ?? {}),
+      languageCode: PLACES_LANGUAGE_CODE,
+      regionCode: PLACES_REGION_CODE,
+    };
+  }
 
   try {
-    response = await fetch(`${PLACES_API_BASE}${path}`, {
-      method: options.method ?? "POST",
+    response = await fetch(url, {
+      method,
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
         "X-Goog-FieldMask": options.fieldMask,
+        "X-Goog-Language-Code": PLACES_LANGUAGE_CODE,
+        "X-Goog-Region-Code": PLACES_REGION_CODE,
       },
-      body: options.body ? JSON.stringify(options.body) : undefined,
+      body: body ? JSON.stringify(body) : undefined,
       cache: "no-store",
     });
   } catch {

@@ -11,10 +11,10 @@ const homeEntries = [
   },
   {
     id: "frequent",
-    label: "常吃餐廳",
+    label: "🍜 常吃餐廳",
     subtitle: "看看你最常回訪的店家",
     iconSrc: homeAssets.iconFrequentRestaurants,
-    href: "/favorites",
+    href: "/restaurants/frequent",
   },
 ] as const;
 

@@ -11,7 +11,13 @@ export type CurrentGroupIdData = {
   current_group_id: string | null;
 };
 
+export type MyProfileData = {
+  displayName: string;
+  createdAt: string;
+};
+
 const UNKNOWN_MEMBER_LABEL = "未知成員";
+const DISPLAY_NAME_MAX = 50;
 
 /**
  * Display name for the signed-in user.
@@ -45,6 +51,117 @@ export async function getMyDisplayName(): Promise<string | null> {
 
   const trimmed = data?.display_name?.trim() ?? "";
   return trimmed || null;
+}
+
+/**
+ * Load the signed-in user's profile fields for the Personal Profile page.
+ */
+export async function getMyProfile(): Promise<ProfileResult<MyProfileData | null>> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!user) {
+    return { data: null, error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("display_name, created_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  if (!data) {
+    return { data: null, error: null };
+  }
+
+  return {
+    data: {
+      displayName: data.display_name?.trim() ?? "",
+      createdAt: data.created_at,
+    },
+    error: null,
+  };
+}
+
+/**
+ * Update the signed-in user's display_name (1–50 chars after trim).
+ */
+export async function updateMyDisplayName(
+  displayName: string,
+): Promise<ProfileResult<MyProfileData | null>> {
+  const nextName = displayName.trim();
+
+  if (!nextName || nextName.length > DISPLAY_NAME_MAX) {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Invalid display name",
+        details: "",
+        hint: "",
+        code: "22001",
+      } as PostgrestError,
+    };
+  }
+
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!user) {
+    return { data: null, error: null };
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ display_name: nextName })
+    .eq("id", user.id)
+    .select("display_name, created_at")
+    .maybeSingle();
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  if (!data) {
+    return {
+      data: null,
+      error: {
+        name: "PostgrestError",
+        message: "Profile not found or not allowed",
+        details: "",
+        hint: "",
+        code: "PGRST116",
+      } as PostgrestError,
+    };
+  }
+
+  return {
+    data: {
+      displayName: data.display_name?.trim() ?? "",
+      createdAt: data.created_at,
+    },
+    error: null,
+  };
 }
 
 export async function getCurrentGroupId(

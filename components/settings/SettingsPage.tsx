@@ -88,8 +88,7 @@ export default function SettingsPage() {
           <SettingsRow
             emoji="👤"
             label="個人資料"
-            trailing="Coming Soon"
-            disabled
+            href="/settings/profile"
           />
           <RowDivider />
           <SettingsRow emoji="👥" label="群組管理" href="/settings/groups" />

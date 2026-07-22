@@ -9,7 +9,7 @@
 本文件定義 Yum Diary 的資料模型規格。  
 **不包含 SQL Migration 實作細節**；實作時應以本文件為準，並與 Project Spec／Features 保持一致。
 
-本文件僅涵蓋目前 MVP 已確定之餐廳與照片模型。不納入尚未定案的功能（例如 Menu Item 明細表、Diary／用餐紀錄表等）。
+本文件僅涵蓋目前 MVP 已確定之餐廳、照片與菜單品項模型。不納入尚未定案的功能（例如 Diary 進階統計等）。
 
 ---
 
@@ -127,12 +127,33 @@
 ### 4.1 Notes
 
 - Google Preview 階段可只在前端顯示；確認儲存餐廳後，才下載並寫入本表與 Storage。
-- 菜單照片若暫用本表承載，`source` 仍應為使用者建立；專用 Menu 表留待後續規格。
+- 菜單照片若暫用本表承載，`source` 仍應為使用者建立；結構化品項見 `menu_items`。
 - 可選擴充（非 MVP 必填）：`caption`、`sort_order`。
 
 ---
 
-## 5. Relationship Diagram
+## 5. menu_items Table
+
+餐廳結構化菜單品項。一間餐廳可有多筆品項（1:N）。對齊 `AI_MENU_IMPORT_SPEC.md` 的 JSON 欄位；本表不含 description／image／加料選項等。
+
+| Column | Type | Required | Description |
+|--------|------|----------|-------------|
+| `id` | `uuid` | Yes | 主鍵。建議由資料庫產生（如 `gen_random_uuid()`）。 |
+| `restaurant_id` | `uuid` | Yes | 所屬餐廳。FK → `restaurants.id`。建議 `ON DELETE CASCADE`。 |
+| `category` | `text` | Yes | 菜單分類（如「純喝茶」）。無分類時應用層寫入「其他」。 |
+| `name` | `text` | Yes | 品項名稱；保持店家原文。 |
+| `price` | `numeric` | No | 價格。無法確認時為 `NULL`。 |
+| `display_order` | `integer` | Yes | 顯示順序（1 起算）；對齊菜單原本順序。 |
+| `created_at` | `timestamptz` | Yes | 建立時間（UTC）。 |
+| `updated_at` | `timestamptz` | Yes | 最後更新時間（UTC）；建議由 trigger 維護。 |
+
+### 5.1 Out of scope (Foundation v1)
+
+不建立：`description`、`image`、`ice_options`、`sugar_options`、`tags`、`availability`。
+
+---
+
+## 6. Relationship Diagram
 
 ```mermaid
 erDiagram
@@ -142,6 +163,7 @@ erDiagram
   groups ||--o{ restaurants : "contains"
   profiles ||--o{ restaurants : "created_by"
   restaurants ||--o{ restaurant_photos : "has"
+  restaurants ||--o{ menu_items : "has"
 
   profiles {
     uuid id PK
@@ -184,20 +206,32 @@ erDiagram
     text source
     timestamptz created_at
   }
+
+  menu_items {
+    uuid id PK
+    uuid restaurant_id FK
+    text category
+    text name
+    numeric price
+    int display_order
+    timestamptz created_at
+    timestamptz updated_at
+  }
 ```
 
-### 5.1 Cardinality summary
+### 6.1 Cardinality summary
 
 | Relationship | Cardinality |
 |--------------|-------------|
 | `groups` → `restaurants` | 1 : N |
 | `profiles` → `restaurants`（created_by） | 1 : N |
 | `restaurants` → `restaurant_photos` | 1 : N |
+| `restaurants` → `menu_items` | 1 : N |
 | `groups` ↔ `profiles`（via `group_members`） | N : M |
 
 ---
 
-## 6. Suggested Indexes
+## 7. Suggested Indexes
 
 除 PRIMARY KEY 與 FK／UNIQUE 自動產生之索引外，建議：
 
@@ -208,21 +242,22 @@ erDiagram
 | `restaurants_group_id_name_idx` | `restaurants` | `(group_id, name)` | 店名搜尋／排序輔助（可視查詢模式調整為 trigram 等）。 |
 | `restaurant_photos_restaurant_id_idx` | `restaurant_photos` | `(restaurant_id)` | 依餐廳載入照片（若 FK 未自動涵蓋查詢型態再補）。 |
 | `restaurant_photos_restaurant_id_is_cover_idx` | `restaurant_photos` | `(restaurant_id, is_cover)` | 快速取封面；或改用 partial unique：`UNIQUE (restaurant_id) WHERE is_cover`。 |
+| `menu_items_restaurant_id_display_order_idx` | `menu_items` | `(restaurant_id, display_order)` | 依餐廳載入並維持菜單順序。 |
 
 `UNIQUE (group_id, google_place_id)` 已同時服務去重與查找。
 
 ---
 
-## 7. RLS Design Principles
+## 8. RLS Design Principles
 
 Yum Diary 使用 Supabase／Postgres RLS 時，應遵守下列原則（具體 policy SQL 不在本文件展開）。
 
-### 7.1 Identity
+### 8.1 Identity
 
 - 以 `auth.uid()` 對應 `profiles.id`。
 - 所有餐廳與照片存取必須先確認使用者為目標群組之成員（`group_members`）。
 
-### 7.2 restaurants
+### 8.2 restaurants
 
 | Operation | Principle |
 |-----------|-----------|
@@ -231,19 +266,26 @@ Yum Diary 使用 Supabase／Postgres RLS 時，應遵守下列原則（具體 po
 | `UPDATE` | 僅允許更新使用者所屬群組內的餐廳。 |
 | `DELETE` | 僅允許刪除使用者所屬群組內的餐廳（是否限 owner 屬產品決策，預設建議群組成員可刪，或僅 owner／建立者——需在 Features 定案後補齊）。 |
 
-### 7.3 restaurant_photos
+### 8.3 restaurant_photos
 
 | Operation | Principle |
 |-----------|-----------|
 | `SELECT` | 透過所屬 `restaurants.group_id` 驗證成員資格後可讀。 |
 | `INSERT` / `UPDATE` / `DELETE` | 同上；不可對非成員群組的餐廳掛載照片。 |
 
-### 7.4 Storage
+### 8.4 menu_items
+
+| Operation | Principle |
+|-----------|-----------|
+| `SELECT` | 透過所屬 `restaurants.group_id` 驗證成員資格後可讀。 |
+| `INSERT` / `UPDATE` / `DELETE` | 同上；不可對非成員群組的餐廳寫入品項。 |
+
+### 8.5 Storage
 
 - Storage bucket policy 應與 `storage_path` 所屬群組／餐廳一致，避免僅靠「知道 path」即可讀寫。
 - Google 預覽圖在入庫前不應寫入受保護 bucket 作為最終資產，除非已完成下載與權限綁定。
 
-### 7.5 Defense in depth
+### 8.6 Defense in depth
 
 - RLS 為最後防線；應用層仍應以 `current_group_id`／成員檢查縮小查詢範圍。
 - Service role key 僅用於受信任的伺服端工作，不得暴露於前端。
@@ -254,4 +296,4 @@ Yum Diary 使用 Supabase／Postgres RLS 時，應遵守下列原則（具體 po
 
 - 本文件欄位名稱與實際 Supabase／Postgres schema 一致（例如 `website_url`、`notes`）。
 - 規格變更時同步更新 `FEATURES.md` 的 Related Database，並視需要修訂 `PROJECT_SPEC.md` 原則。
-- Menu Item、Diary、收藏統計等表結構待產品定案後另開章節，不提前納入本文件。
+- Diary 進階統計等表結構待產品定案後另開章節。

@@ -12,16 +12,31 @@ type RestaurantCardProps = {
   restaurant: Restaurant;
   onClick?: () => void;
   onFavoriteClick?: () => void;
+  /** Dining visit count for frequent ranking. */
+  visitCount?: number;
+  /** 1-based rank for frequent ranking badge. */
+  rank?: number;
 };
+
+function formatRankBadge(rank: number): string {
+  if (rank === 1) return "🥇 第1名";
+  if (rank === 2) return "🥈 第2名";
+  if (rank === 3) return "🥉 第3名";
+  return `第${rank}名`;
+}
 
 export default function RestaurantCard({
   restaurant,
   onClick,
   onFavoriteClick,
+  visitCount,
+  rank,
 }: RestaurantCardProps) {
   const hasRating = restaurant.rating > 0;
   const hasDistance = restaurant.distanceMeters > 0;
   const priceLabel = resolvePriceLabel(restaurant);
+  const showVisitCount = visitCount != null && visitCount > 0;
+  const showRank = rank != null && rank > 0;
 
   return (
     <article
@@ -45,6 +60,11 @@ export default function RestaurantCard({
             />
           </div>
         </div>
+        {showRank ? (
+          <span className="absolute -top-1 left-0 z-20 rounded-full border border-border bg-rice-white px-1.5 py-0.5 text-[10px] font-bold leading-none text-deep-brown shadow-soft">
+            {formatRankBadge(rank)}
+          </span>
+        ) : null}
         <Image
           src={homeAssets.stickerFlowerPink}
           alt=""
@@ -66,6 +86,11 @@ export default function RestaurantCard({
         <p className="truncate text-xs text-cocoa">
           {restaurant.tags.join(" · ")}
         </p>
+        {showVisitCount ? (
+          <p className="text-xs font-medium text-caramel">
+            造訪 {visitCount} 次
+          </p>
+        ) : null}
         {hasDistance || priceLabel ? (
           <div className="flex items-center gap-3 text-xs text-cocoa">
             {hasDistance ? (

@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import BunnyHero from "@/components/home/BunnyHero";
 import HomeEntryList from "@/components/home/HomeEntryList";
 import HomeGreeting from "@/components/home/HomeGreeting";
-import HomeSearchSection from "@/components/home/HomeSearchSection";
 import RestaurantEmptyState from "@/components/home/RestaurantEmptyState";
 import TopBar from "@/components/layout/TopBar";
 import {
@@ -64,7 +63,7 @@ export default function HomePage() {
   }, [revision, currentGroupId, groupLoading]);
 
   return (
-    <div className="home-grid-bg min-h-full">
+    <div className="home-grid-bg min-h-full pb-10">
       <TopBar />
       <HomeGreeting />
       <BunnyHero />
@@ -96,7 +95,6 @@ export default function HomePage() {
         </div>
       ) : null}
 
-      <HomeSearchSection />
     </div>
   );
 }

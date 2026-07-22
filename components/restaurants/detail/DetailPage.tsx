@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import DetailActionBar from "@/components/restaurants/detail/DetailActionBar";
 import DetailHeader from "@/components/restaurants/detail/DetailHeader";
 import Identity from "@/components/restaurants/detail/Identity";
+import MenuEntrySection from "@/components/restaurants/detail/MenuEntrySection";
 import MenuSection from "@/components/restaurants/detail/MenuSection";
 import MyRecordSection from "@/components/restaurants/detail/MyRecordSection";
 import RestaurantInfoList from "@/components/restaurants/detail/RestaurantInfoList";
@@ -469,6 +470,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         restaurantId={restaurant.id}
         restaurantName={restaurant.name}
       />
+      <MenuEntrySection restaurantId={restaurant.id} />
       <MyRecordSection
         restaurant={restaurant}
         status={recordsStatus}

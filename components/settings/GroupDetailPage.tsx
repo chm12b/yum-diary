@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ChevronRight } from "lucide-react";
 
 import DeleteGroupDialog from "@/components/settings/DeleteGroupDialog";
+import ImportNearbyConfirmDialog from "@/components/settings/ImportNearbyConfirmDialog";
 import LeaveGroupDialog from "@/components/settings/LeaveGroupDialog";
 import RenameGroupSheet from "@/components/settings/RenameGroupSheet";
 import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
@@ -71,6 +72,7 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
   const [leaving, setLeaving] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [importNearbyOpen, setImportNearbyOpen] = useState(false);
   const toastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -329,6 +331,29 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
                 label="邀請成員"
                 href={`${basePath}/invite`}
               />
+              <RowDivider />
+              <button
+                type="button"
+                onClick={() => setImportNearbyOpen(true)}
+                className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-cream-bg/40 active:bg-cream-bg/60"
+              >
+                <span className="text-base leading-none" aria-hidden>
+                  📥
+                </span>
+                <span className="min-w-0 flex-1 text-left">
+                  <span className="block text-base font-medium text-deep-brown">
+                    匯入附近餐廳
+                  </span>
+                  <span className="mt-1 block text-xs leading-relaxed text-text-secondary">
+                    使用 Google Places 匯入附近餐廳到目前群組。
+                  </span>
+                </span>
+                <ChevronRight
+                  className="h-5 w-5 shrink-0 text-cocoa"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              </button>
             </>
           ) : null}
           <RowDivider />
@@ -447,6 +472,15 @@ export default function GroupDetailPage({ groupId }: GroupDetailPageProps) {
           }
         }}
         onConfirm={handleDeleteConfirm}
+      />
+
+      <ImportNearbyConfirmDialog
+        open={importNearbyOpen}
+        onClose={() => setImportNearbyOpen(false)}
+        onConfirm={() => {
+          setImportNearbyOpen(false);
+          router.push("/restaurants/nearby");
+        }}
       />
 
       {toast ? (
