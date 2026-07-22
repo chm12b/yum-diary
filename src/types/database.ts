@@ -324,6 +324,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      group_orders: {
+        Row: {
+          id: string;
+          group_id: string;
+          restaurant_id: string;
+          title: string;
+          description: string | null;
+          status: string;
+          close_at: string;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          restaurant_id: string;
+          title: string;
+          description?: string | null;
+          status?: string;
+          close_at: string;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          group_id?: string;
+          restaurant_id?: string;
+          title?: string;
+          description?: string | null;
+          status?: string;
+          close_at?: string;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       record_photos: {
         Row: {
           id: string;

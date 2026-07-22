@@ -4,14 +4,14 @@ import { homeAssets } from "@/src/lib/home-assets";
 const homeEntries = [
   {
     id: "nearby",
-    label: "🔍 探索附近餐廳",
+    label: "探索附近餐廳",
     subtitle: "探索附近的美味餐廳",
     iconSrc: homeAssets.iconNearbyFood,
     href: "/restaurants/nearby",
   },
   {
     id: "frequent",
-    label: "🍜 常吃餐廳",
+    label: "常吃餐廳",
     subtitle: "看看你最常回訪的店家",
     iconSrc: homeAssets.iconFrequentRestaurants,
     href: "/restaurants/frequent",
@@ -20,7 +20,7 @@ const homeEntries = [
 
 export default function HomeEntryList() {
   return (
-    <section className="-mt-[40px] flex flex-col gap-4 px-5 pt-[50px]">
+    <section className="mt-4 flex flex-col gap-4 px-5">
       {homeEntries.map((entry) => (
         <EntryCard
           key={entry.id}
