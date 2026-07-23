@@ -114,6 +114,8 @@ export type Database = {
           category: string;
           phone: string | null;
           address: string | null;
+          city: string | null;
+          district: string | null;
           website_url: string | null;
           notes: string | null;
           latitude: number | null;
@@ -139,6 +141,8 @@ export type Database = {
           category: string;
           phone?: string | null;
           address?: string | null;
+          city?: string | null;
+          district?: string | null;
           website_url?: string | null;
           notes?: string | null;
           latitude?: number | null;
@@ -164,6 +168,8 @@ export type Database = {
           category?: string;
           phone?: string | null;
           address?: string | null;
+          city?: string | null;
+          district?: string | null;
           website_url?: string | null;
           notes?: string | null;
           latitude?: number | null;

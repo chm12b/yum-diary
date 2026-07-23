@@ -34,6 +34,10 @@ export type Restaurant = {
   /** App category label (e.g. 日式) or legacy mock id. */
   category: string;
   isFavorite: boolean;
+  /** City from restaurants.city; null when not yet parsed. */
+  city?: string | null;
+  /** District from restaurants.district; null when not yet parsed. */
+  district?: string | null;
   googlePlaceId?: string;
   /** ISO timestamptz from restaurants.last_google_sync_at */
   lastGoogleSyncAt?: string | null;
