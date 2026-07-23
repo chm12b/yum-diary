@@ -10,8 +10,10 @@ import GroupOrderSummaryCard, {
 import ParticipantOrderCard from "@/components/group-order/ParticipantOrderCard";
 import { useAuth } from "@/src/hooks/useAuth";
 import {
+  deleteOrderItem,
   lineTotal,
   listOrderItems,
+  updateOrderItem,
   type GroupOrderItem,
 } from "@/src/services/group-order-item";
 import { getGroupOrder, type GroupOrder } from "@/src/services/group-order";
@@ -30,9 +32,12 @@ type OrderDetailPageProps = {
 type LoadStatus = "loading" | "ready" | "not-found" | "error";
 
 type DisplayLineItem = {
+  id: string;
   name: string;
-  customization?: string | null;
-  price: number;
+  note: string | null;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
 };
 
 type DisplayParticipant = {
@@ -87,15 +92,13 @@ function formatDeadlineLabel(iso: string): string {
 }
 
 function toDisplayLineItem(item: GroupOrderItem): DisplayLineItem {
-  const name =
-    item.quantity > 1
-      ? `${item.menuItemName} ×${item.quantity}`
-      : item.menuItemName;
-
   return {
-    name,
-    customization: item.note,
-    price: lineTotal(item),
+    id: item.id,
+    name: item.menuItemName,
+    note: item.note,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice ?? 0,
+    lineTotal: lineTotal(item),
   };
 }
 
@@ -115,6 +118,7 @@ function buildDisplayParticipants(input: {
     itemsByParticipant.set(item.participantId, list);
   }
 
+  // participants is already ordered by joined_at ASC.
   const cards: DisplayParticipant[] = participants.map((participant) => {
     const isHost = participant.userId === order.createdBy;
     const isCurrentUser =
@@ -131,23 +135,29 @@ function buildDisplayParticipants(input: {
     };
   });
 
-  const alreadyListed =
-    currentUserId != null &&
-    cards.some((card) => card.userId === currentUserId);
+  const me = cards.find((card) => card.isCurrentUser);
+  const others = cards.filter((card) => !card.isCurrentUser);
 
-  if (currentUserId && !alreadyListed) {
-    cards.unshift({
-      userId: currentUserId,
-      participantId: null,
-      displayName: names.get(currentUserId) ?? "我",
-      isHost: currentUserId === order.createdBy,
-      isCurrentUser: true,
-      hasJoined: false,
-      items: [],
-    });
+  if (currentUserId && !me) {
+    return [
+      {
+        userId: currentUserId,
+        participantId: null,
+        displayName: names.get(currentUserId) ?? "我",
+        isHost: currentUserId === order.createdBy,
+        isCurrentUser: true,
+        hasJoined: false,
+        items: [],
+      },
+      ...others,
+    ];
   }
 
-  return cards;
+  if (me) {
+    return [me, ...others];
+  }
+
+  return others;
 }
 
 export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
@@ -165,6 +175,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   );
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [quantityBusyId, setQuantityBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -250,6 +261,22 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     };
   }, [orderItems, participants.length]);
 
+  async function refreshParticipantsAndItems(groupOrderId: string) {
+    const [nextParticipants, nextItems] = await Promise.all([
+      listParticipants(groupOrderId),
+      listOrderItems(groupOrderId),
+    ]);
+    setParticipants(nextParticipants);
+    setOrderItems(nextItems);
+
+    const profileIds = [
+      ...(order ? [order.createdBy] : []),
+      ...nextParticipants.map((p) => p.userId),
+    ];
+    const names = await listProfileDisplayNames(profileIds);
+    setDisplayNames(names);
+  }
+
   async function handleJoinOrEdit(hasJoined: boolean) {
     if (!order) {
       return;
@@ -264,10 +291,45 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     setJoinError(null);
     try {
       await createParticipant({ groupOrderId: order.id });
-      router.push(`/orders/${order.id}/my-order`);
+      await refreshParticipantsAndItems(order.id);
     } catch {
       setJoinError("加入點餐失敗，請再試一次");
+    } finally {
       setJoining(false);
+    }
+  }
+
+  async function handleQuantityChange(itemId: string, delta: 1 | -1) {
+    if (!order || quantityBusyId) {
+      return;
+    }
+
+    const current = orderItems.find((item) => item.id === itemId);
+    if (!current) {
+      return;
+    }
+
+    setQuantityBusyId(itemId);
+    setJoinError(null);
+    try {
+      const nextQuantity = current.quantity + delta;
+      if (nextQuantity <= 0) {
+        await deleteOrderItem({ id: itemId });
+        setOrderItems((prev) => prev.filter((item) => item.id !== itemId));
+        return;
+      }
+
+      const updated = await updateOrderItem({
+        id: itemId,
+        quantity: nextQuantity,
+      });
+      setOrderItems((prev) =>
+        prev.map((item) => (item.id === itemId ? updated : item)),
+      );
+    } catch {
+      setJoinError("更新數量失敗，請再試一次");
+    } finally {
+      setQuantityBusyId(null);
     }
   }
 
@@ -364,6 +426,16 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             items={participant.items}
             editDisabled={!canEditOrder}
             joining={participant.isCurrentUser && joining}
+            quantityBusyId={
+              participant.isCurrentUser ? quantityBusyId : null
+            }
+            onQuantityChange={
+              participant.isCurrentUser && participant.hasJoined
+                ? (itemId, delta) => {
+                    void handleQuantityChange(itemId, delta);
+                  }
+                : undefined
+            }
             onEditOrder={() => {
               void handleJoinOrEdit(participant.hasJoined);
             }}

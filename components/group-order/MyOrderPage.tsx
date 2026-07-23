@@ -8,8 +8,10 @@ import MenuPageHeader from "@/components/menu/MenuPageHeader";
 import MenuSearchBar from "@/components/menu/MenuSearchBar";
 import {
   createOrderItem,
+  deleteOrderItem,
   listMyOrderItems,
   lineTotal,
+  updateOrderItem,
   type GroupOrderItem,
 } from "@/src/services/group-order-item";
 import { getGroupOrder, type GroupOrder } from "@/src/services/group-order";
@@ -33,8 +35,8 @@ export default function MyOrderPage({ orderId }: MyOrderPageProps) {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [myItems, setMyItems] = useState<GroupOrderItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [addingItemId, setAddingItemId] = useState<string | null>(null);
-  const [addError, setAddError] = useState<string | null>(null);
+  const [busyMenuItemId, setBusyMenuItemId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,37 +96,97 @@ export default function MyOrderPage({ orderId }: MyOrderPageProps) {
     };
   }, [orderId]);
 
+  const quantityByMenuItemId = useMemo(() => {
+    const map = new Map<string, GroupOrderItem>();
+    for (const item of myItems) {
+      map.set(item.menuItemId, item);
+    }
+    return map;
+  }, [myItems]);
+
   const mySubtotal = useMemo(
     () => myItems.reduce((sum, item) => sum + lineTotal(item), 0),
     [myItems],
   );
 
-  async function handleAddItem(item: MenuItem) {
-    if (!order || addingItemId) {
+  function upsertLocalItem(next: GroupOrderItem) {
+    setMyItems((prev) => {
+      const index = prev.findIndex((item) => item.id === next.id);
+      if (index === -1) {
+        const byMenu = prev.findIndex(
+          (item) => item.menuItemId === next.menuItemId,
+        );
+        if (byMenu === -1) {
+          return [...prev, next];
+        }
+        const copy = [...prev];
+        copy[byMenu] = next;
+        return copy;
+      }
+      const copy = [...prev];
+      copy[index] = next;
+      return copy;
+    });
+  }
+
+  async function handleIncrement(menuItem: MenuItem) {
+    if (!order || busyMenuItemId) {
       return;
     }
 
-    setAddingItemId(item.id);
-    setAddError(null);
+    setBusyMenuItemId(menuItem.id);
+    setActionError(null);
     try {
-      const created = await createOrderItem({
+      const next = await createOrderItem({
         groupOrderId: order.id,
-        menuItemId: item.id,
+        menuItemId: menuItem.id,
         quantity: 1,
         note: null,
       });
-      setMyItems((prev) => [...prev, created]);
+      upsertLocalItem(next);
     } catch {
-      setAddError("加入失敗，請再試一次");
+      setActionError("更新數量失敗，請再試一次");
     } finally {
-      setAddingItemId(null);
+      setBusyMenuItemId(null);
+    }
+  }
+
+  async function handleDecrement(menuItem: MenuItem) {
+    if (!order || busyMenuItemId) {
+      return;
+    }
+
+    const current = quantityByMenuItemId.get(menuItem.id);
+    if (!current) {
+      return;
+    }
+
+    setBusyMenuItemId(menuItem.id);
+    setActionError(null);
+    try {
+      const nextQuantity = current.quantity - 1;
+      if (nextQuantity <= 0) {
+        await deleteOrderItem({ id: current.id });
+        setMyItems((prev) => prev.filter((item) => item.id !== current.id));
+        return;
+      }
+
+      const updated = await updateOrderItem({
+        id: current.id,
+        quantity: nextQuantity,
+      });
+      upsertLocalItem(updated);
+    } catch {
+      setActionError("更新數量失敗，請再試一次");
+    } finally {
+      setBusyMenuItemId(null);
     }
   }
 
   if (status === "loading") {
     return (
       <div className="home-grid-bg min-h-full pb-8">
-        <MenuPageHeader title="我的餐點" />
+        <MenuPageHeader title="新增餐點" />
         <div className="animate-pulse space-y-3 px-5 pt-4" aria-hidden>
           <div className="h-9 w-full rounded-full bg-border/70" />
           <div className="h-8 w-full rounded-full bg-border/60" />
@@ -137,7 +199,7 @@ export default function MyOrderPage({ orderId }: MyOrderPageProps) {
   if (status === "not-found" || status === "error") {
     return (
       <div className="home-grid-bg min-h-full pb-8">
-        <MenuPageHeader title="我的餐點" />
+        <MenuPageHeader title="新增餐點" />
         <div className="flex flex-col items-center gap-3 px-5 pt-10 text-center">
           <p className="text-sm text-cocoa">
             {status === "not-found" ? "找不到這場點餐" : "載入失敗"}
@@ -156,7 +218,7 @@ export default function MyOrderPage({ orderId }: MyOrderPageProps) {
   if (status === "closed") {
     return (
       <div className="home-grid-bg min-h-full pb-8">
-        <MenuPageHeader title="我的餐點" />
+        <MenuPageHeader title="新增餐點" />
         <div className="flex flex-col items-center gap-3 px-5 pt-10 text-center">
           <p className="text-sm text-cocoa">此點餐已截止，無法修改餐點</p>
           <Link
@@ -172,23 +234,27 @@ export default function MyOrderPage({ orderId }: MyOrderPageProps) {
 
   return (
     <div className="home-grid-bg min-h-full pb-28">
-      <MenuPageHeader title="我的餐點" subtitle={restaurantName} />
+      <MenuPageHeader title="新增餐點" subtitle={restaurantName} />
 
       <div className="space-y-3 px-5 pt-3">
         <MenuSearchBar value={searchQuery} onChange={setSearchQuery} />
 
-        {addError ? (
+        {actionError ? (
           <p className="text-center text-sm text-soft-orange" role="alert">
-            {addError}
+            {actionError}
           </p>
         ) : null}
 
         <MenuBrowseList
           items={menuItems}
           searchQuery={searchQuery}
-          onAddItem={handleAddItem}
-          addingItemId={addingItemId}
-          addDisabled={Boolean(addingItemId)}
+          getQuantity={(item) =>
+            quantityByMenuItemId.get(item.id)?.quantity ?? 0
+          }
+          onIncrement={handleIncrement}
+          onDecrement={handleDecrement}
+          busyMenuItemId={busyMenuItemId}
+          controlsDisabled={Boolean(busyMenuItemId)}
         />
       </div>
 

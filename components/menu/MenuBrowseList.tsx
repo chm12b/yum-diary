@@ -10,15 +10,23 @@ import {
 } from "react";
 
 import type { MenuItem } from "@/src/services/menu-item";
+import QuantityStepper, {
+  QuantityAddButton,
+} from "@/components/group-order/QuantityStepper";
 
 type MenuBrowseListProps = {
   items: MenuItem[];
   /** Client-side name filter (case-insensitive). */
   searchQuery?: string;
-  /** When set, each row shows an add action. */
-  onAddItem?: (item: MenuItem) => void;
-  addingItemId?: string | null;
-  addDisabled?: boolean;
+  /**
+   * When set, each row shows quantity controls.
+   * Return 0 when the item is not yet in the order.
+   */
+  getQuantity?: (item: MenuItem) => number;
+  onIncrement?: (item: MenuItem) => void;
+  onDecrement?: (item: MenuItem) => void;
+  busyMenuItemId?: string | null;
+  controlsDisabled?: boolean;
 };
 
 const ALL_CATEGORY = "全部";
@@ -38,9 +46,11 @@ function formatPrice(price: number | null): string {
 export default function MenuBrowseList({
   items,
   searchQuery = "",
-  onAddItem,
-  addingItemId = null,
-  addDisabled = false,
+  getQuantity,
+  onIncrement,
+  onDecrement,
+  busyMenuItemId = null,
+  controlsDisabled = false,
 }: MenuBrowseListProps) {
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
@@ -257,7 +267,9 @@ export default function MenuBrowseList({
 
       <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
         {visibleItems.map((item) => {
-          const isAdding = addingItemId === item.id;
+          const showControls = Boolean(getQuantity && onIncrement && onDecrement);
+          const quantity = getQuantity?.(item) ?? 0;
+          const busy = busyMenuItemId === item.id;
           return (
             <li
               key={item.id}
@@ -276,15 +288,21 @@ export default function MenuBrowseList({
               <p className="shrink-0 font-mono text-sm text-cocoa">
                 {formatPrice(item.price)}
               </p>
-              {onAddItem ? (
-                <button
-                  type="button"
-                  disabled={addDisabled || isAdding}
-                  onClick={() => onAddItem(item)}
-                  className="shrink-0 rounded-full border border-caramel/50 bg-cream-bg/80 px-3 py-1.5 text-xs font-bold text-[#6E4F38] shadow-soft transition-[filter] hover:brightness-[0.99] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55"
-                >
-                  {isAdding ? "加入中…" : "【加入】"}
-                </button>
+              {showControls ? (
+                quantity > 0 ? (
+                  <QuantityStepper
+                    quantity={quantity}
+                    disabled={controlsDisabled || busy}
+                    onDecrement={() => onDecrement?.(item)}
+                    onIncrement={() => onIncrement?.(item)}
+                  />
+                ) : (
+                  <QuantityAddButton
+                    busy={busy}
+                    disabled={controlsDisabled}
+                    onClick={() => onIncrement?.(item)}
+                  />
+                )
               ) : null}
             </li>
           );

@@ -11,7 +11,9 @@ import type {
 } from "./types";
 
 /**
- * Add a menu item to the signed-in user's order for a group order.
+ * Add a menu item to the signed-in user's order.
+ * If the same menu_item already exists for this participant, increments quantity
+ * instead of inserting a second row (MVP: note / options ignored).
  */
 export async function createOrderItem(
   input: CreateOrderItemInput,
@@ -56,6 +58,42 @@ export async function createOrderItem(
     throw new Error("Menu item does not belong to this restaurant");
   }
 
+  const menuSnapshot = {
+    name: menuItem.name,
+    price: menuItem.price == null ? null : Number(menuItem.price),
+  };
+
+  const { data: existing, error: existingError } = await supabase
+    .from("group_order_items")
+    .select("*")
+    .eq("participant_id", participant.id)
+    .eq("menu_item_id", menuItemId)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existing) {
+    const nextQuantity =
+      existing.quantity + normalizeQuantity(input.quantity);
+    const { data, error } = await supabase
+      .from("group_order_items")
+      .update({ quantity: nextQuantity })
+      .eq("id", existing.id)
+      .select("*")
+      .single();
+
+    if (error) {
+      throw error;
+    }
+    if (!data) {
+      throw new Error("Failed to update order item quantity");
+    }
+
+    return toGroupOrderItem(data, menuSnapshot);
+  }
+
   const row: GroupOrderItemInsert = {
     participant_id: participant.id,
     menu_item_id: menuItemId,
@@ -76,8 +114,5 @@ export async function createOrderItem(
     throw new Error("Failed to create order item");
   }
 
-  return toGroupOrderItem(data, {
-    name: menuItem.name,
-    price: menuItem.price == null ? null : Number(menuItem.price),
-  });
+  return toGroupOrderItem(data, menuSnapshot);
 }
