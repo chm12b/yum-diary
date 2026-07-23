@@ -91,34 +91,35 @@ export default function ParticipantOrderCard({
       </div>
 
       {hasItems ? (
-        <ul className="mt-3 flex flex-col gap-3 border-t border-dashed border-border/80 pt-3">
+        <ul className="mt-2.5 flex flex-col gap-2 border-t border-dashed border-border/80 pt-2.5">
           {items.map((item) => {
             const busy = quantityBusyId === item.id;
+            const note = item.note?.trim() || null;
+
             if (canEditQuantities) {
               return (
-                <li key={item.id} className="flex flex-col gap-1.5">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="min-w-0 text-[15px] leading-snug text-[#6E4F38]">
-                      <span className="font-medium">{item.name}</span>
-                      {item.note?.trim() ? (
-                        <span className="text-sm text-text-secondary">
-                          {" "}
-                          ({item.note.trim()})
-                        </span>
-                      ) : null}
+                <li key={item.id} className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <p className="min-w-0 flex-1 truncate text-[15px] font-medium leading-snug text-[#6E4F38]">
+                      {item.name}
                     </p>
-                    <span className="shrink-0 text-[15px] font-medium text-[#6E4F38]">
+                    <span className="shrink-0 text-right text-[15px] font-medium tabular-nums text-[#6E4F38]">
                       {formatPrice(item.unitPrice)}
                     </span>
+                    <div className="shrink-0">
+                      <QuantityStepper
+                        quantity={item.quantity}
+                        disabled={busy || editDisabled}
+                        onDecrement={() => onQuantityChange?.(item.id, -1)}
+                        onIncrement={() => onQuantityChange?.(item.id, 1)}
+                      />
+                    </div>
                   </div>
-                  <div className="flex justify-end">
-                    <QuantityStepper
-                      quantity={item.quantity}
-                      disabled={busy || editDisabled}
-                      onDecrement={() => onQuantityChange?.(item.id, -1)}
-                      onIncrement={() => onQuantityChange?.(item.id, 1)}
-                    />
-                  </div>
+                  {note ? (
+                    <p className="truncate pl-0 text-xs text-text-secondary">
+                      {note}
+                    </p>
+                  ) : null}
                 </li>
               );
             }
@@ -131,18 +132,19 @@ export default function ParticipantOrderCard({
             return (
               <li
                 key={item.id}
-                className="flex items-start justify-between gap-3"
+                className="flex items-center justify-between gap-3"
               >
-                <p className="min-w-0 text-[15px] leading-snug text-[#6E4F38]">
-                  <span className="font-medium">{label}</span>
-                  {item.note?.trim() ? (
-                    <span className="text-sm text-text-secondary">
-                      {" "}
-                      ({item.note.trim()})
-                    </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-medium leading-snug text-[#6E4F38]">
+                    {label}
+                  </p>
+                  {note ? (
+                    <p className="mt-0.5 truncate text-xs text-text-secondary">
+                      {note}
+                    </p>
                   ) : null}
-                </p>
-                <span className="shrink-0 text-[15px] font-medium text-[#6E4F38]">
+                </div>
+                <span className="shrink-0 text-[15px] font-medium tabular-nums text-[#6E4F38]">
                   {formatPrice(item.lineTotal)}
                 </span>
               </li>
@@ -155,9 +157,11 @@ export default function ParticipantOrderCard({
         </p>
       )}
 
-      <p className="mt-3 text-right text-[15px] font-bold text-soft-orange">
-        小計：{formatPrice(subtotal)}
-      </p>
+      {hasItems ? (
+        <p className="mt-3 text-right text-[15px] font-bold text-soft-orange">
+          小計：{formatPrice(subtotal)}
+        </p>
+      ) : null}
 
       {isCurrentUser ? (
         <button

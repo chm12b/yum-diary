@@ -1,4 +1,18 @@
 export { createGroupOrder } from "./createGroupOrder";
+export {
+  assertGroupOrderAcceptsEdits,
+  ensureGroupOrderDeadlineClosed,
+  isGroupOrderPastDeadline,
+  requireWritableGroupOrder,
+} from "./deadline";
+export {
+  EXTEND_DEADLINE_OPTIONS_MINUTES,
+  extendGroupOrderDeadline,
+} from "./extendGroupOrderDeadline";
+export type {
+  ExtendDeadlineMinutes,
+  ExtendGroupOrderDeadlineInput,
+} from "./extendGroupOrderDeadline";
 export { getGroupOrder } from "./getGroupOrder";
 export { listActiveGroupOrders } from "./listActiveGroupOrders";
 export { updateGroupOrder } from "./updateGroupOrder";

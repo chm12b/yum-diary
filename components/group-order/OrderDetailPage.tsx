@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import ExtendDeadlineDialog from "@/components/group-order/ExtendDeadlineDialog";
 import GroupOrderSummaryCard, {
   GroupOrderPageHeader,
 } from "@/components/group-order/GroupOrderSummaryCard";
@@ -16,7 +17,13 @@ import {
   updateOrderItem,
   type GroupOrderItem,
 } from "@/src/services/group-order-item";
-import { getGroupOrder, type GroupOrder } from "@/src/services/group-order";
+import {
+  ensureGroupOrderDeadlineClosed,
+  extendGroupOrderDeadline,
+  getGroupOrder,
+  type ExtendDeadlineMinutes,
+  type GroupOrder,
+} from "@/src/services/group-order";
 import {
   createParticipant,
   listParticipants,
@@ -136,7 +143,10 @@ function buildDisplayParticipants(input: {
   });
 
   const me = cards.find((card) => card.isCurrentUser);
-  const others = cards.filter((card) => !card.isCurrentUser);
+  // Hide other participants who have no order items (participant row kept in DB).
+  const others = cards.filter(
+    (card) => !card.isCurrentUser && card.items.length > 0,
+  );
 
   if (currentUserId && !me) {
     return [
@@ -176,21 +186,49 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [quantityBusyId, setQuantityBusyId] = useState<string | null>(null);
+  const [extendDialogOpen, setExtendDialogOpen] = useState(false);
+  const [extending, setExtending] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current != null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
+
+  function showToast(message: string) {
+    setToast(message);
+    if (toastTimerRef.current != null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 2800);
+  }
 
   useEffect(() => {
     let cancelled = false;
 
     void (async () => {
       try {
-        const nextOrder = await getGroupOrder(orderId);
+        const loaded = await getGroupOrder(orderId);
         if (cancelled) {
           return;
         }
-        if (!nextOrder) {
+        if (!loaded) {
           setOrder(null);
           setParticipants([]);
           setOrderItems([]);
           setStatus("not-found");
+          return;
+        }
+
+        const nextOrder = await ensureGroupOrderDeadlineClosed(loaded);
+        if (cancelled) {
           return;
         }
 
@@ -278,7 +316,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   }
 
   async function handleJoinOrEdit(hasJoined: boolean) {
-    if (!order) {
+    if (!order || order.status !== "OPEN") {
       return;
     }
 
@@ -300,7 +338,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   }
 
   async function handleQuantityChange(itemId: string, delta: 1 | -1) {
-    if (!order || quantityBusyId) {
+    if (!order || order.status !== "OPEN" || quantityBusyId) {
       return;
     }
 
@@ -330,6 +368,25 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
       setJoinError("更新數量失敗，請再試一次");
     } finally {
       setQuantityBusyId(null);
+    }
+  }
+
+  async function handleExtendDeadline(minutes: ExtendDeadlineMinutes) {
+    if (!order || extending) {
+      return;
+    }
+
+    setExtending(true);
+    try {
+      const updated = await extendGroupOrderDeadline({
+        id: order.id,
+        minutes,
+      });
+      setOrder(updated);
+      setExtendDialogOpen(false);
+      showToast(`已延長點餐時間 ${minutes} 分鐘。`);
+    } finally {
+      setExtending(false);
     }
   }
 
@@ -382,6 +439,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   }
 
   const canEditOrder = order.status === "OPEN";
+  const isHost = user?.id != null && user.id === order.createdBy;
+  const showHostClosedActions = isHost && order.status === "CLOSED";
 
   return (
     <div className="min-h-full bg-rice-white pb-10">
@@ -408,6 +467,27 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
           itemCount={stats.itemCount}
           estimatedTotal={stats.estimatedTotal}
         />
+
+        {showHostClosedActions ? (
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setExtendDialogOpen(true)}
+              className="flex h-11 flex-1 items-center justify-center rounded-full border border-caramel/50 bg-rice-white text-sm font-bold text-[#6E4F38] shadow-soft transition-[filter] hover:brightness-[0.99] active:scale-[0.99]"
+            >
+              延長時間
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                // Complete-order flow — later sprint
+              }}
+              className="flex h-11 flex-1 items-center justify-center rounded-full bg-caramel text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.99]"
+            >
+              完成訂單
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <section className="mt-4 flex flex-col gap-3 px-5 pb-6">
@@ -442,6 +522,26 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
           />
         ))}
       </section>
+
+      <ExtendDeadlineDialog
+        open={extendDialogOpen}
+        submitting={extending}
+        onClose={() => {
+          if (!extending) {
+            setExtendDialogOpen(false);
+          }
+        }}
+        onConfirm={handleExtendDeadline}
+      />
+
+      {toast ? (
+        <div
+          role="status"
+          className="fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+1rem)] z-50 mx-auto w-[min(100%-2rem,28rem)] rounded-2xl border border-caramel/30 bg-sakura-pink/80 px-4 py-3 text-center text-sm font-medium text-deep-brown shadow-card"
+        >
+          {toast}
+        </div>
+      ) : null}
     </div>
   );
 }

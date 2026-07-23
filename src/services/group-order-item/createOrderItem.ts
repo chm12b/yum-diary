@@ -1,5 +1,5 @@
+import { requireWritableGroupOrder } from "@/src/services/group-order";
 import { createClient } from "@/src/lib/supabase/client";
-import { getGroupOrder } from "@/src/services/group-order";
 import { getMyParticipant } from "@/src/services/group-order-participant";
 
 import { toGroupOrderItem } from "./map";
@@ -27,13 +27,7 @@ export async function createOrderItem(
     throw new Error("Missing required field: menuItemId");
   }
 
-  const order = await getGroupOrder(groupOrderId);
-  if (!order) {
-    throw new Error("Group order not found");
-  }
-  if (order.status !== "OPEN") {
-    throw new Error("Group order is not open");
-  }
+  const order = await requireWritableGroupOrder(groupOrderId);
 
   const participant = await getMyParticipant(groupOrderId);
   if (!participant) {

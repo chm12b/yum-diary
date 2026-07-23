@@ -5,39 +5,34 @@ type QuantityStepperProps = {
   onDecrement: () => void;
   onIncrement: () => void;
   disabled?: boolean;
-  /** Compact layout for denser cards. */
-  size?: "default" | "compact";
 };
 
 /**
- * Shared − quantity ＋ control used on Group Order and Menu (新增餐點) pages.
- * Touch targets are at least 44×44px (Apple HIG).
+ * Compact capsule stepper: [－  2  ＋]
+ * Visual height ~36px; button hit areas remain ≥44px (Apple HIG).
  */
 export default function QuantityStepper({
   quantity,
   onDecrement,
   onIncrement,
   disabled = false,
-  size = "default",
 }: QuantityStepperProps) {
-  const buttonClass =
-    size === "compact"
-      ? "flex h-11 min-h-[44px] w-11 min-w-[44px] items-center justify-center rounded-full border border-caramel/50 bg-rice-white text-base font-bold text-[#6E4F38] shadow-soft transition-[filter] hover:brightness-[0.99] active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-55"
-      : "flex h-11 min-h-[44px] w-11 min-w-[44px] items-center justify-center rounded-full border border-caramel/50 bg-rice-white text-base font-bold text-[#6E4F38] shadow-soft transition-[filter] hover:brightness-[0.99] active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-55";
+  const hitButtonClass =
+    "flex h-11 min-h-[44px] w-11 min-w-[44px] shrink-0 items-center justify-center text-sm font-bold text-[#6E4F38] transition-colors hover:bg-cream-bg/70 active:bg-cream-bg disabled:cursor-not-allowed disabled:opacity-55";
 
   return (
-    <div className="inline-flex items-center gap-1.5">
+    <div className="inline-flex h-9 items-center overflow-visible rounded-full border border-caramel/50 bg-rice-white shadow-soft">
       <button
         type="button"
         aria-label="減少數量"
         disabled={disabled}
         onClick={onDecrement}
-        className={buttonClass}
+        className={`${hitButtonClass} -my-1 rounded-l-full`}
       >
         －
       </button>
       <span
-        className="min-w-[1.75rem] text-center font-display text-[15px] font-bold tabular-nums text-[#6E4F38]"
+        className="min-w-[1.5rem] px-0.5 text-center font-display text-sm font-bold tabular-nums text-[#6E4F38]"
         aria-live="polite"
       >
         {quantity}
@@ -47,7 +42,7 @@ export default function QuantityStepper({
         aria-label="增加數量"
         disabled={disabled}
         onClick={onIncrement}
-        className={buttonClass}
+        className={`${hitButtonClass} -my-1 rounded-r-full`}
       >
         ＋
       </button>

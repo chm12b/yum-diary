@@ -25,7 +25,7 @@ type GroupOrderSummaryCardProps = {
 
 const STATUS_TEXT: Record<GroupOrderStatus, string> = {
   OPEN: "點餐中",
-  CLOSED: "已截止",
+  CLOSED: "已截止點餐",
   COMPLETED: "已完成",
 };
 

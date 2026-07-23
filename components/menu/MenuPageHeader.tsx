@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 type MenuPageHeaderProps = {
   title: string;
   subtitle?: string;
+  /** When set, replaces default router.back(). */
+  onBack?: () => void;
 };
 
 const iconButtonClass =
@@ -14,6 +16,7 @@ const iconButtonClass =
 export default function MenuPageHeader({
   title,
   subtitle,
+  onBack,
 }: MenuPageHeaderProps) {
   const router = useRouter();
 
@@ -23,7 +26,13 @@ export default function MenuPageHeader({
         <button
           type="button"
           aria-label="返回上一頁"
-          onClick={() => router.back()}
+          onClick={() => {
+            if (onBack) {
+              onBack();
+              return;
+            }
+            router.back();
+          }}
           className={`${iconButtonClass} justify-self-start`}
         >
           <ArrowLeft className="h-5 w-5" strokeWidth={2} />
