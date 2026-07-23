@@ -19,8 +19,17 @@ function isRestaurantDetailPath(pathname: string) {
   return /^\/restaurants\/[^/]+$/.test(pathname);
 }
 
+/** Group order deep link: /orders/{id} (not nested routes like my-order). */
+function isGroupOrderPath(pathname: string) {
+  return /^\/orders\/[^/]+$/.test(pathname);
+}
+
 function isAuthNextPath(pathname: string) {
-  return isJoinPath(pathname) || isRestaurantDetailPath(pathname);
+  return (
+    isJoinPath(pathname) ||
+    isRestaurantDetailPath(pathname) ||
+    isGroupOrderPath(pathname)
+  );
 }
 
 function isPublicAuthPath(pathname: string) {

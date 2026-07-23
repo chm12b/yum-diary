@@ -11,6 +11,10 @@ import GroupOrderSummaryCard, {
 import ParticipantOrderCard from "@/components/group-order/ParticipantOrderCard";
 import { useAuth } from "@/src/hooks/useAuth";
 import {
+  buildGroupOrderShareMessage,
+  buildGroupOrderShareUrl,
+} from "@/src/lib/app-url";
+import {
   deleteOrderItem,
   lineTotal,
   listOrderItems,
@@ -56,6 +60,19 @@ type DisplayParticipant = {
   hasJoined: boolean;
   items: DisplayLineItem[];
 };
+
+function formatDeadlineTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return iso;
+  }
+
+  return new Intl.DateTimeFormat("zh-TW", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
 
 function formatDeadlineLabel(iso: string): string {
   const date = new Date(iso);
@@ -390,6 +407,42 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     }
   }
 
+  async function handleShare() {
+    if (!order) {
+      return;
+    }
+
+    const url = buildGroupOrderShareUrl(order.id);
+    const text = buildGroupOrderShareMessage({
+      restaurantName,
+      title: order.title,
+      deadlineTime: formatDeadlineTime(order.closeAt),
+      url,
+    });
+
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "🍽 一起來點餐！",
+          text,
+          url,
+        });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast("已複製點餐連結。");
+    } catch {
+      showToast("複製失敗，請稍後再試。");
+    }
+  }
+
   if (status === "loading") {
     return (
       <div className="min-h-full bg-rice-white pb-10">
@@ -445,16 +498,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   return (
     <div className="min-h-full bg-rice-white pb-10">
       <GroupOrderPageHeader
-        onShare={() => {
-          if (typeof navigator !== "undefined" && navigator.share) {
-            void navigator.share({
-              title: order.title,
-              url: window.location.href,
-            });
-            return;
-          }
-          void navigator.clipboard?.writeText(window.location.href);
-        }}
+        onShare={isHost ? () => void handleShare() : undefined}
       />
 
       <div className="px-5">
