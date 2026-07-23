@@ -1,6 +1,7 @@
 export const homeAssets = {
   bunnyDesk: "/home/bunny-desk.png",
   iconNearbyFood: "/home/icon-nearby-food.png",
+  iconNearbyRestaurant: "/home/nearby-restaurant-icon.png",
   iconFrequentRestaurants: "/home/icon-frequent-restaurants.png",
   iconGroupOrder: "/home/group-order-icon.png",
   iconDice: "/home/icon-dice.png",

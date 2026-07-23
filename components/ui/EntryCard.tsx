@@ -22,15 +22,15 @@ export default function EntryCard({
 }: EntryCardProps) {
   return (
     <Link href={href} className="block transition-transform active:scale-[0.98]">
-      <PaperCard className="flex items-center gap-4 px-5 py-5">
+      <PaperCard className="flex h-[90px] items-center gap-4 px-5 py-5">
         {iconSrc ? (
           <Image
             src={iconSrc}
             alt=""
             width={80}
-            height={48}
+            height={60}
             aria-hidden
-            className="h-12 w-[80px] shrink-0 object-contain -ml-[10px] -mr-[22px]"
+            className="h-[60px] w-[80px] shrink-0 object-contain -ml-[10px] -mr-[20px]"
           />
         ) : leading ? (
           <span className="flex h-12 w-12 shrink-0 items-center justify-center text-2xl leading-none">

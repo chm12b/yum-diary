@@ -2,6 +2,7 @@ import type { PlaceDetailItem, PlacesApiResponse } from "@/src/lib/google/places
 import { createClient } from "@/src/lib/supabase/client";
 
 import { getRestaurant } from "./getRestaurant";
+import { resolveCityDistrict } from "./resolveCityDistrict";
 import type { RestaurantRecord } from "./types";
 import {
   isMissingColumnError,
@@ -24,6 +25,9 @@ const OPTIONAL_SYNC_COLUMNS = [
   "google_rating_count",
   "price_level",
 ] as const;
+
+/** Columns added by migration 028 — may be absent if it isn't applied yet. */
+const CITY_DISTRICT_COLUMNS = ["city", "district"] as const;
 
 /**
  * Re-sync restaurant contact / hours fields from Google Place Details.
@@ -67,6 +71,8 @@ export async function syncRestaurantFromGoogle(
   const detail = payload.data;
   const now = new Date().toISOString();
   const photoReference = optionalText(detail.photo);
+  const address = optionalText(detail.address);
+  const { city, district } = resolveCityDistrict(address);
 
   const supabase = createClient();
 
@@ -99,7 +105,7 @@ export async function syncRestaurantFromGoogle(
 
   const coreUpdate = {
     phone: optionalText(detail.phone),
-    address: optionalText(detail.address),
+    address,
     website_url: optionalText(detail.website),
     business_hours: normalizeBusinessHours(detail.businessHours),
     latitude: detail.latitude ?? null,
@@ -110,9 +116,15 @@ export async function syncRestaurantFromGoogle(
     updated_at: now,
   };
 
+  const withLocation = {
+    ...coreUpdate,
+    city,
+    district,
+  };
+
   // Optional columns depend on migrations 009 / 014 being applied.
   const fullUpdate = {
-    ...coreUpdate,
+    ...withLocation,
     google_photo_reference: photoReference,
     google_rating: detail.rating ?? null,
     google_rating_count: detail.reviewCount ?? null,
@@ -127,8 +139,22 @@ export async function syncRestaurantFromGoogle(
     .select("*")
     .maybeSingle();
 
-  // A later migration may not be applied yet — still sync the core Google fields.
+  // A later migration may not be applied yet — still sync with city/district.
   if (error && isMissingColumnError(error, OPTIONAL_SYNC_COLUMNS)) {
+    const retry = await supabase
+      .from("restaurants")
+      .update(withLocation)
+      .eq("id", restaurantId)
+      .eq("group_id", profile.current_group_id)
+      .select("*")
+      .maybeSingle();
+
+    data = retry.data;
+    error = retry.error;
+  }
+
+  // Migration 028 may not be applied yet — still sync core Google fields.
+  if (error && isMissingColumnError(error, CITY_DISTRICT_COLUMNS)) {
     const retry = await supabase
       .from("restaurants")
       .update(coreUpdate)

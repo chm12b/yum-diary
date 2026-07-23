@@ -1,7 +1,10 @@
 import type { AuthError, PostgrestError } from "@supabase/supabase-js";
 
 import { getRestaurant as getRestaurantForGroup } from "@/src/services/restaurant/getRestaurant";
-import { listRestaurants as listRestaurantsForGroup } from "@/src/services/restaurant/listRestaurants";
+import {
+  listRestaurants as listRestaurantsForGroup,
+  type ListRestaurantsInput,
+} from "@/src/services/restaurant/listRestaurants";
 import type { Database } from "@/src/types/database";
 
 export type RestaurantResult<T> = {
@@ -11,11 +14,16 @@ export type RestaurantResult<T> = {
 
 export type RestaurantRow = Database["public"]["Tables"]["restaurants"]["Row"];
 
+/**
+ * Backward-compatible wrapper:
+ * - `listRestaurants(groupId)`
+ * - `listRestaurants({ groupId, filter, sort, search, referencePoint })`
+ */
 export async function listRestaurants(
-  groupId: string,
+  groupIdOrOptions: string | ListRestaurantsInput,
 ): Promise<RestaurantResult<RestaurantRow[]>> {
   try {
-    const data = await listRestaurantsForGroup(groupId);
+    const data = await listRestaurantsForGroup(groupIdOrOptions);
     return { data, error: null };
   } catch (error) {
     return {

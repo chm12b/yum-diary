@@ -1,13 +1,14 @@
 import EntryCard from "@/components/ui/EntryCard";
 import { homeAssets } from "@/src/lib/home-assets";
+import { NEARBY_QUICK_BROWSE_QUERY } from "@/src/lib/restaurants/nearby-quick-browse";
 
 const homeEntries = [
   {
     id: "nearby",
-    label: "探索附近餐廳",
-    subtitle: "探索附近的美味餐廳",
-    iconSrc: homeAssets.iconNearbyFood,
-    href: "/restaurants/nearby",
+    label: "逛逛附近餐廳",
+    subtitle: "看看附近正在營業的店家",
+    iconSrc: homeAssets.iconNearbyRestaurant,
+    href: `/restaurants?${NEARBY_QUICK_BROWSE_QUERY}=1`,
   },
   {
     id: "frequent",

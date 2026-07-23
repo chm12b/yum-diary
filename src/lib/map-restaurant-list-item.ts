@@ -45,6 +45,8 @@ export function mapRestaurantRecordToListItem(
     tags: [row.category],
     category: row.category,
     isFavorite,
+    city: row.city ?? null,
+    district: row.district ?? null,
     googlePlaceId: row.google_place_id ?? undefined,
     notes: row.notes ?? undefined,
   };
