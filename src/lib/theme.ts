@@ -5,6 +5,7 @@ export const colors = {
   khaki: "#EADCC6",
   warmGray: "#F2E3CF",
   caramel: "#B98F6B",
+  softOrange: "#E89B62",
   deepBrown: "#8C6B4F",
   cocoa: "#A67C52",
   softGray: "#CFC7BE",

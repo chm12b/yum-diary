@@ -1,10 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
-import MenuPageHeader from "@/components/menu/MenuPageHeader";
+import GroupOrderSummaryCard, {
+  GroupOrderPageHeader,
+} from "@/components/group-order/GroupOrderSummaryCard";
+import ParticipantOrderCard from "@/components/group-order/ParticipantOrderCard";
+import { useAuth } from "@/src/hooks/useAuth";
+import {
+  lineTotal,
+  listOrderItems,
+  type GroupOrderItem,
+} from "@/src/services/group-order-item";
 import { getGroupOrder, type GroupOrder } from "@/src/services/group-order";
+import {
+  createParticipant,
+  listParticipants,
+  type GroupOrderParticipant,
+} from "@/src/services/group-order-participant";
 import { listProfileDisplayNames } from "@/src/services/profile/profile.service";
 import { getRestaurant } from "@/src/services/restaurant";
 
@@ -14,43 +29,142 @@ type OrderDetailPageProps = {
 
 type LoadStatus = "loading" | "ready" | "not-found" | "error";
 
-const STATUS_LABEL: Record<GroupOrder["status"], string> = {
-  OPEN: "開放中",
-  CLOSED: "已截止",
-  COMPLETED: "已完成",
+type DisplayLineItem = {
+  name: string;
+  customization?: string | null;
+  price: number;
 };
 
-function formatCloseAt(iso: string): string {
+type DisplayParticipant = {
+  userId: string;
+  participantId: string | null;
+  displayName: string;
+  isHost: boolean;
+  isCurrentUser: boolean;
+  hasJoined: boolean;
+  items: DisplayLineItem[];
+};
+
+function formatDeadlineLabel(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) {
     return iso;
   }
-  return new Intl.DateTimeFormat("zh-TW", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+
+  const now = new Date();
+  const time = new Intl.DateTimeFormat("zh-TW", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
   }).format(date);
+
+  const sameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate();
+
+  if (sameDay) {
+    return `今天 ${time}`;
+  }
+
+  const tomorrow = new Date(now);
+  tomorrow.setDate(now.getDate() + 1);
+  const isTomorrow =
+    date.getFullYear() === tomorrow.getFullYear() &&
+    date.getMonth() === tomorrow.getMonth() &&
+    date.getDate() === tomorrow.getDate();
+
+  if (isTomorrow) {
+    return `明天 ${time}`;
+  }
+
+  const day = new Intl.DateTimeFormat("zh-TW", {
+    month: "numeric",
+    day: "numeric",
+  }).format(date);
+
+  return `${day} ${time}`;
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-4 border-b border-dashed border-border px-4 py-3 last:border-b-0">
-      <span className="shrink-0 text-xs text-text-secondary">{label}</span>
-      <span className="min-w-0 text-right text-sm font-medium text-deep-brown">
-        {value}
-      </span>
-    </div>
-  );
+function toDisplayLineItem(item: GroupOrderItem): DisplayLineItem {
+  const name =
+    item.quantity > 1
+      ? `${item.menuItemName} ×${item.quantity}`
+      : item.menuItemName;
+
+  return {
+    name,
+    customization: item.note,
+    price: lineTotal(item),
+  };
+}
+
+function buildDisplayParticipants(input: {
+  order: GroupOrder;
+  participants: GroupOrderParticipant[];
+  orderItems: GroupOrderItem[];
+  currentUserId: string | null;
+  names: Map<string, string>;
+}): DisplayParticipant[] {
+  const { order, participants, orderItems, currentUserId, names } = input;
+
+  const itemsByParticipant = new Map<string, DisplayLineItem[]>();
+  for (const item of orderItems) {
+    const list = itemsByParticipant.get(item.participantId) ?? [];
+    list.push(toDisplayLineItem(item));
+    itemsByParticipant.set(item.participantId, list);
+  }
+
+  const cards: DisplayParticipant[] = participants.map((participant) => {
+    const isHost = participant.userId === order.createdBy;
+    const isCurrentUser =
+      currentUserId != null && participant.userId === currentUserId;
+
+    return {
+      userId: participant.userId,
+      participantId: participant.id,
+      displayName: names.get(participant.userId) ?? "未知成員",
+      isHost,
+      isCurrentUser,
+      hasJoined: true,
+      items: itemsByParticipant.get(participant.id) ?? [],
+    };
+  });
+
+  const alreadyListed =
+    currentUserId != null &&
+    cards.some((card) => card.userId === currentUserId);
+
+  if (currentUserId && !alreadyListed) {
+    cards.unshift({
+      userId: currentUserId,
+      participantId: null,
+      displayName: names.get(currentUserId) ?? "我",
+      isHost: currentUserId === order.createdBy,
+      isCurrentUser: true,
+      hasJoined: false,
+      items: [],
+    });
+  }
+
+  return cards;
 }
 
 export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
+  const router = useRouter();
+  const { user } = useAuth();
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [order, setOrder] = useState<GroupOrder | null>(null);
   const [restaurantName, setRestaurantName] = useState("—");
-  const [hostName, setHostName] = useState("—");
+  const [participants, setParticipants] = useState<GroupOrderParticipant[]>(
+    [],
+  );
+  const [orderItems, setOrderItems] = useState<GroupOrderItem[]>([]);
+  const [displayNames, setDisplayNames] = useState<Map<string, string>>(
+    () => new Map(),
+  );
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,23 +177,37 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         }
         if (!nextOrder) {
           setOrder(null);
+          setParticipants([]);
+          setOrderItems([]);
           setStatus("not-found");
           return;
         }
 
-        setOrder(nextOrder);
-
-        const [restaurant, names] = await Promise.all([
+        const [restaurant, nextParticipants, nextItems] = await Promise.all([
           getRestaurant(nextOrder.restaurantId),
-          listProfileDisplayNames([nextOrder.createdBy]),
+          listParticipants(nextOrder.id),
+          listOrderItems(nextOrder.id),
         ]);
 
         if (cancelled) {
           return;
         }
 
+        const profileIds = [
+          nextOrder.createdBy,
+          ...nextParticipants.map((p) => p.userId),
+        ];
+        const names = await listProfileDisplayNames(profileIds);
+
+        if (cancelled) {
+          return;
+        }
+
+        setOrder(nextOrder);
         setRestaurantName(restaurant?.name?.trim() || "未知餐廳");
-        setHostName(names.get(nextOrder.createdBy) ?? "未知成員");
+        setParticipants(nextParticipants);
+        setOrderItems(nextItems);
+        setDisplayNames(names);
         setStatus("ready");
       } catch {
         if (!cancelled) {
@@ -93,12 +221,64 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     };
   }, [orderId]);
 
+  const displayParticipants = useMemo(() => {
+    if (!order) {
+      return [];
+    }
+    return buildDisplayParticipants({
+      order,
+      participants,
+      orderItems,
+      currentUserId: user?.id ?? null,
+      names: displayNames,
+    });
+  }, [order, participants, orderItems, user?.id, displayNames]);
+
+  const stats = useMemo(() => {
+    const itemCount = orderItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+    const estimatedTotal = orderItems.reduce(
+      (sum, item) => sum + lineTotal(item),
+      0,
+    );
+    return {
+      participantCount: participants.length,
+      itemCount,
+      estimatedTotal,
+    };
+  }, [orderItems, participants.length]);
+
+  async function handleJoinOrEdit(hasJoined: boolean) {
+    if (!order) {
+      return;
+    }
+
+    if (hasJoined) {
+      router.push(`/orders/${order.id}/my-order`);
+      return;
+    }
+
+    setJoining(true);
+    setJoinError(null);
+    try {
+      await createParticipant({ groupOrderId: order.id });
+      router.push(`/orders/${order.id}/my-order`);
+    } catch {
+      setJoinError("加入點餐失敗，請再試一次");
+      setJoining(false);
+    }
+  }
+
   if (status === "loading") {
     return (
-      <div className="home-grid-bg min-h-full pb-8">
-        <MenuPageHeader title="點餐活動" />
-        <div className="animate-pulse px-5 pt-6" aria-hidden>
-          <div className="h-40 rounded-2xl bg-border/80" />
+      <div className="min-h-full bg-rice-white pb-10">
+        <GroupOrderPageHeader />
+        <div className="animate-pulse space-y-4 px-5 pt-2" aria-hidden>
+          <div className="h-44 rounded-[1.5rem] bg-border/70" />
+          <div className="h-40 rounded-[1.35rem] bg-border/60" />
+          <div className="h-32 rounded-[1.35rem] bg-border/50" />
         </div>
       </div>
     );
@@ -106,8 +286,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
   if (status === "not-found" || !order) {
     return (
-      <div className="home-grid-bg min-h-full pb-8">
-        <MenuPageHeader title="點餐活動" />
+      <div className="min-h-full bg-rice-white pb-10">
+        <GroupOrderPageHeader />
         <section className="flex flex-col items-center gap-3 px-5 pt-16 text-center">
           <p className="text-sm font-medium text-cocoa">找不到這場點餐</p>
           <Link
@@ -123,8 +303,8 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
   if (status === "error") {
     return (
-      <div className="home-grid-bg min-h-full pb-8">
-        <MenuPageHeader title="點餐活動" />
+      <div className="min-h-full bg-rice-white pb-10">
+        <GroupOrderPageHeader />
         <section className="flex flex-col items-center gap-3 px-5 pt-16 text-center">
           <p className="text-sm font-medium text-cocoa">載入點餐失敗</p>
           <button
@@ -139,27 +319,56 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     );
   }
 
+  const canEditOrder = order.status === "OPEN";
+
   return (
-    <div className="home-grid-bg min-h-full pb-8">
-      <MenuPageHeader title="點餐活動" subtitle={order.title} />
+    <div className="min-h-full bg-rice-white pb-10">
+      <GroupOrderPageHeader
+        onShare={() => {
+          if (typeof navigator !== "undefined" && navigator.share) {
+            void navigator.share({
+              title: order.title,
+              url: window.location.href,
+            });
+            return;
+          }
+          void navigator.clipboard?.writeText(window.location.href);
+        }}
+      />
 
-      <section className="px-5 pt-4">
-        <div className="overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
-          <InfoRow label="餐廳" value={restaurantName} />
-          <InfoRow label="標題" value={order.title} />
-          <InfoRow label="狀態" value={STATUS_LABEL[order.status]} />
-          <InfoRow label="截止時間" value={formatCloseAt(order.closeAt)} />
-          <InfoRow label="Host" value={hostName} />
-        </div>
-      </section>
+      <div className="px-5">
+        <GroupOrderSummaryCard
+          title={order.title}
+          restaurantName={restaurantName}
+          status={order.status}
+          deadlineLabel={formatDeadlineLabel(order.closeAt)}
+          participantCount={stats.participantCount}
+          itemCount={stats.itemCount}
+          estimatedTotal={stats.estimatedTotal}
+        />
+      </div>
 
-      <section className="px-5 pt-6">
-        <div className="rounded-2xl border border-dashed border-border bg-rice-white/80 px-4 py-10 text-center">
-          <p className="text-sm font-medium text-cocoa">尚無點餐</p>
-          <p className="mt-1 text-xs text-text-secondary">
-            菜單與訂單功能將於後續開放
+      <section className="mt-4 flex flex-col gap-3 px-5 pb-6">
+        {joinError ? (
+          <p className="text-center text-sm text-soft-orange" role="alert">
+            {joinError}
           </p>
-        </div>
+        ) : null}
+        {displayParticipants.map((participant) => (
+          <ParticipantOrderCard
+            key={participant.userId}
+            displayName={participant.displayName}
+            isHost={participant.isHost}
+            isCurrentUser={participant.isCurrentUser}
+            hasJoined={participant.hasJoined}
+            items={participant.items}
+            editDisabled={!canEditOrder}
+            joining={participant.isCurrentUser && joining}
+            onEditOrder={() => {
+              void handleJoinOrEdit(participant.hasJoined);
+            }}
+          />
+        ))}
       </section>
     </div>
   );

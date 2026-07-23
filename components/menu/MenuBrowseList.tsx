@@ -13,6 +13,12 @@ import type { MenuItem } from "@/src/services/menu-item";
 
 type MenuBrowseListProps = {
   items: MenuItem[];
+  /** Client-side name filter (case-insensitive). */
+  searchQuery?: string;
+  /** When set, each row shows an add action. */
+  onAddItem?: (item: MenuItem) => void;
+  addingItemId?: string | null;
+  addDisabled?: boolean;
 };
 
 const ALL_CATEGORY = "全部";
@@ -29,7 +35,13 @@ function formatPrice(price: number | null): string {
  * Read-only menu list with horizontally scrollable category chips.
  * Preserves display_order; chips filter without reordering.
  */
-export default function MenuBrowseList({ items }: MenuBrowseListProps) {
+export default function MenuBrowseList({
+  items,
+  searchQuery = "",
+  onAddItem,
+  addingItemId = null,
+  addDisabled = false,
+}: MenuBrowseListProps) {
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -40,17 +52,25 @@ export default function MenuBrowseList({ items }: MenuBrowseListProps) {
   const dragStartXRef = useRef(0);
   const dragStartScrollRef = useRef(0);
 
+  const searchableItems = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) {
+      return items;
+    }
+    return items.filter((item) => item.name.toLowerCase().includes(q));
+  }, [items, searchQuery]);
+
   const categories = useMemo(() => {
     const seen = new Set<string>();
     const ordered: string[] = [];
-    for (const item of items) {
+    for (const item of searchableItems) {
       if (!seen.has(item.category)) {
         seen.add(item.category);
         ordered.push(item.category);
       }
     }
     return ordered;
-  }, [items]);
+  }, [searchableItems]);
 
   useEffect(() => {
     const el = chipScrollRef.current;
@@ -90,12 +110,19 @@ export default function MenuBrowseList({ items }: MenuBrowseListProps) {
       el.removeEventListener("wheel", onWheel);
       observer.disconnect();
     };
-  }, [categories.length, items.length]);
+  }, [categories.length, searchableItems.length]);
 
   const visibleItems =
-    selectedCategory === ALL_CATEGORY
-      ? items
-      : items.filter((item) => item.category === selectedCategory);
+    selectedCategory === ALL_CATEGORY ||
+    !categories.includes(selectedCategory)
+      ? searchableItems
+      : searchableItems.filter((item) => item.category === selectedCategory);
+
+  const activeCategory =
+    selectedCategory === ALL_CATEGORY ||
+    !categories.includes(selectedCategory)
+      ? ALL_CATEGORY
+      : selectedCategory;
 
   function scrollByStep(direction: 1 | -1) {
     const el = chipScrollRef.current;
@@ -144,6 +171,14 @@ export default function MenuBrowseList({ items }: MenuBrowseListProps) {
     );
   }
 
+  if (searchableItems.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-rice-white/70 px-4 py-12 text-center shadow-soft">
+        <p className="text-sm text-cocoa/70">找不到符合的品項</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="relative">
@@ -172,7 +207,7 @@ export default function MenuBrowseList({ items }: MenuBrowseListProps) {
           }`}
         >
           {[ALL_CATEGORY, ...categories].map((category) => {
-            const active = category === selectedCategory;
+            const active = category === activeCategory;
             return (
               <button
                 key={category}
@@ -221,26 +256,39 @@ export default function MenuBrowseList({ items }: MenuBrowseListProps) {
       </div>
 
       <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
-        {visibleItems.map((item) => (
-          <li
-            key={item.id}
-            className="flex items-baseline justify-between gap-3 px-4 py-3"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-deep-brown">
-                {item.name}
-              </p>
-              {selectedCategory === ALL_CATEGORY ? (
-                <p className="mt-0.5 text-xs text-text-secondary">
-                  {item.category}
+        {visibleItems.map((item) => {
+          const isAdding = addingItemId === item.id;
+          return (
+            <li
+              key={item.id}
+              className="flex items-center justify-between gap-3 px-4 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-deep-brown">
+                  {item.name}
                 </p>
+                {activeCategory === ALL_CATEGORY ? (
+                  <p className="mt-0.5 text-xs text-text-secondary">
+                    {item.category}
+                  </p>
+                ) : null}
+              </div>
+              <p className="shrink-0 font-mono text-sm text-cocoa">
+                {formatPrice(item.price)}
+              </p>
+              {onAddItem ? (
+                <button
+                  type="button"
+                  disabled={addDisabled || isAdding}
+                  onClick={() => onAddItem(item)}
+                  className="shrink-0 rounded-full border border-caramel/50 bg-cream-bg/80 px-3 py-1.5 text-xs font-bold text-[#6E4F38] shadow-soft transition-[filter] hover:brightness-[0.99] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {isAdding ? "加入中…" : "【加入】"}
+                </button>
               ) : null}
-            </div>
-            <p className="shrink-0 font-mono text-sm text-cocoa">
-              {formatPrice(item.price)}
-            </p>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

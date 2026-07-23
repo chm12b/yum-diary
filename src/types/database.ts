@@ -369,6 +369,60 @@ export type Database = {
         };
         Relationships: [];
       };
+      group_order_participants: {
+        Row: {
+          id: string;
+          group_order_id: string;
+          user_id: string;
+          joined_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_order_id: string;
+          user_id: string;
+          joined_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          group_order_id?: string;
+          user_id?: string;
+          joined_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      group_order_items: {
+        Row: {
+          id: string;
+          participant_id: string;
+          menu_item_id: string;
+          quantity: number;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          participant_id: string;
+          menu_item_id: string;
+          quantity?: number;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          participant_id?: string;
+          menu_item_id?: string;
+          quantity?: number;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       record_photos: {
         Row: {
           id: string;

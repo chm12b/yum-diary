@@ -12,6 +12,7 @@
   --khaki: #eadcc6;
   --warm-gray: #f2e3cf;
   --caramel: #b98f6b;
+  --soft-orange: #e89b62;
   --deep-brown: #8c6b4f;
   --cocoa: #a67c52;
   --soft-gray: #cfc7be;
@@ -48,6 +49,7 @@
   --color-khaki: var(--khaki);
   --color-warm-gray: var(--warm-gray);
   --color-caramel: var(--caramel);
+  --color-soft-orange: var(--soft-orange);
   --color-deep-brown: var(--deep-brown);
   --color-cocoa: var(--cocoa);
   --color-soft-gray: var(--soft-gray);
