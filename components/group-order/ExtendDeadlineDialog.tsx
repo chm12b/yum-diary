@@ -60,18 +60,18 @@ function ExtendDeadlineDialogBody({
             id="extend-deadline-title"
             className="text-center font-display text-base font-bold text-deep-brown"
           >
-            延長點餐時間
+            重新開放多久？
           </h2>
           <p
             id="extend-deadline-desc"
             className="mt-1.5 text-center text-sm text-text-secondary"
           >
-            請選擇延長多久。
+            請選擇重新開放時間。
           </p>
         </div>
 
         <fieldset className="flex flex-col gap-2 px-5 py-4" disabled={submitting}>
-          <legend className="sr-only">延長分鐘數</legend>
+          <legend className="sr-only">重新開放分鐘數</legend>
           {EXTEND_DEADLINE_OPTIONS_MINUTES.map((option) => {
             const selected = minutes === option;
             return (
@@ -123,7 +123,7 @@ function ExtendDeadlineDialogBody({
                   setError(null);
                   await onConfirm(minutes);
                 } catch {
-                  setError("延長失敗，請再試一次");
+                  setError("重新開放失敗，請再試一次");
                 }
               })();
             }}

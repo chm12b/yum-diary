@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import CompleteOrderDialog from "@/components/group-order/CompleteOrderDialog";
 import ExtendDeadlineDialog from "@/components/group-order/ExtendDeadlineDialog";
 import GroupOrderSummaryCard, {
   GroupOrderPageHeader,
 } from "@/components/group-order/GroupOrderSummaryCard";
 import ParticipantOrderCard from "@/components/group-order/ParticipantOrderCard";
+import StopOrderingDialog from "@/components/group-order/StopOrderingDialog";
 import { useAuth } from "@/src/hooks/useAuth";
 import {
   buildGroupOrderShareMessage,
@@ -22,7 +24,9 @@ import {
   type GroupOrderItem,
 } from "@/src/services/group-order-item";
 import {
-  ensureGroupOrderDeadlineClosed,
+  closeGroupOrder,
+  completeGroupOrder,
+  ensureGroupOrderStatus,
   extendGroupOrderDeadline,
   getGroupOrder,
   type ExtendDeadlineMinutes,
@@ -205,6 +209,11 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const [quantityBusyId, setQuantityBusyId] = useState<string | null>(null);
   const [extendDialogOpen, setExtendDialogOpen] = useState(false);
   const [extending, setExtending] = useState(false);
+  const [stopDialogOpen, setStopDialogOpen] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -244,7 +253,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
           return;
         }
 
-        const nextOrder = await ensureGroupOrderDeadlineClosed(loaded);
+        const nextOrder = await ensureGroupOrderStatus(loaded);
         if (cancelled) {
           return;
         }
@@ -316,7 +325,10 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     };
   }, [orderItems, participants.length]);
 
-  async function refreshParticipantsAndItems(groupOrderId: string) {
+  async function refreshParticipantsAndItems(
+    groupOrderId: string,
+    createdBy: string,
+  ) {
     const [nextParticipants, nextItems] = await Promise.all([
       listParticipants(groupOrderId),
       listOrderItems(groupOrderId),
@@ -325,11 +337,36 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     setOrderItems(nextItems);
 
     const profileIds = [
-      ...(order ? [order.createdBy] : []),
+      createdBy,
       ...nextParticipants.map((p) => p.userId),
     ];
     const names = await listProfileDisplayNames(profileIds);
     setDisplayNames(names);
+  }
+
+  async function handleRefresh() {
+    if (!order || refreshing) {
+      return;
+    }
+
+    setRefreshing(true);
+    setJoinError(null);
+    try {
+      const loaded = await getGroupOrder(order.id);
+      if (!loaded) {
+        setStatus("not-found");
+        return;
+      }
+
+      const nextOrder = await ensureGroupOrderStatus(loaded);
+      setOrder(nextOrder);
+      await refreshParticipantsAndItems(nextOrder.id, nextOrder.createdBy);
+      showToast("已更新點餐內容。");
+    } catch {
+      showToast("更新失敗，請再試一次。");
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function handleJoinOrEdit(hasJoined: boolean) {
@@ -346,7 +383,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     setJoinError(null);
     try {
       await createParticipant({ groupOrderId: order.id });
-      await refreshParticipantsAndItems(order.id);
+      await refreshParticipantsAndItems(order.id, order.createdBy);
     } catch {
       setJoinError("加入點餐失敗，請再試一次");
     } finally {
@@ -401,9 +438,49 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
       });
       setOrder(updated);
       setExtendDialogOpen(false);
-      showToast(`已延長點餐時間 ${minutes} 分鐘。`);
+      showToast(`已重新開放點餐 ${minutes} 分鐘。`);
     } finally {
       setExtending(false);
+    }
+  }
+
+  async function handleStopOrdering() {
+    if (!order || stopping) {
+      return;
+    }
+
+    setStopping(true);
+    setJoinError(null);
+    try {
+      const updated = await closeGroupOrder({ id: order.id });
+      setOrder(updated);
+      setStopDialogOpen(false);
+      showToast("已停止點單。");
+    } catch {
+      setJoinError("停止點單失敗，請再試一次");
+      setStopDialogOpen(false);
+    } finally {
+      setStopping(false);
+    }
+  }
+
+  async function handleCompleteOrder() {
+    if (!order || completing) {
+      return;
+    }
+
+    setCompleting(true);
+    setJoinError(null);
+    try {
+      const updated = await completeGroupOrder({ id: order.id });
+      setOrder(updated);
+      setCompleteDialogOpen(false);
+      showToast("訂單已完成。");
+    } catch {
+      setJoinError("完成訂單失敗，請再試一次");
+      setCompleteDialogOpen(false);
+    } finally {
+      setCompleting(false);
     }
   }
 
@@ -493,12 +570,17 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
 
   const canEditOrder = order.status === "OPEN";
   const isHost = user?.id != null && user.id === order.createdBy;
+  const showHostOpenActions = isHost && order.status === "OPEN";
   const showHostClosedActions = isHost && order.status === "CLOSED";
 
   return (
     <div className="min-h-full bg-rice-white pb-10">
       <GroupOrderPageHeader
-        onShare={isHost ? () => void handleShare() : undefined}
+        onShare={() => void handleShare()}
+        onRefresh={() => {
+          void handleRefresh();
+        }}
+        refreshing={refreshing}
       />
 
       <div className="px-5">
@@ -510,7 +592,22 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
           participantCount={stats.participantCount}
           itemCount={stats.itemCount}
           estimatedTotal={stats.estimatedTotal}
+          onOpenOverview={() => {
+            router.push(`/orders/${order.id}/summary`);
+          }}
         />
+
+        {showHostOpenActions ? (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setStopDialogOpen(true)}
+              className="flex h-11 w-full items-center justify-center rounded-full border border-status-closed-fg/40 bg-status-closed-bg text-sm font-bold text-status-closed-fg shadow-soft transition-[filter] hover:brightness-[0.99] active:scale-[0.99]"
+            >
+              停止點單
+            </button>
+          </div>
+        ) : null}
 
         {showHostClosedActions ? (
           <div className="mt-3 flex gap-2">
@@ -519,13 +616,11 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
               onClick={() => setExtendDialogOpen(true)}
               className="flex h-11 flex-1 items-center justify-center rounded-full border border-caramel/50 bg-rice-white text-sm font-bold text-[#6E4F38] shadow-soft transition-[filter] hover:brightness-[0.99] active:scale-[0.99]"
             >
-              延長時間
+              重新開放點餐
             </button>
             <button
               type="button"
-              onClick={() => {
-                // Complete-order flow — later sprint
-              }}
+              onClick={() => setCompleteDialogOpen(true)}
               className="flex h-11 flex-1 items-center justify-center rounded-full bg-caramel text-sm font-bold text-rice-white shadow-button transition-[filter] hover:brightness-110 active:scale-[0.99]"
             >
               完成訂單
@@ -549,12 +644,13 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             hasJoined={participant.hasJoined}
             items={participant.items}
             editDisabled={!canEditOrder}
+            hideEditCta={!canEditOrder}
             joining={participant.isCurrentUser && joining}
             quantityBusyId={
               participant.isCurrentUser ? quantityBusyId : null
             }
             onQuantityChange={
-              participant.isCurrentUser && participant.hasJoined
+              participant.isCurrentUser && participant.hasJoined && canEditOrder
                 ? (itemId, delta) => {
                     void handleQuantityChange(itemId, delta);
                   }
@@ -567,6 +663,17 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         ))}
       </section>
 
+      <StopOrderingDialog
+        open={stopDialogOpen}
+        submitting={stopping}
+        onClose={() => {
+          if (!stopping) {
+            setStopDialogOpen(false);
+          }
+        }}
+        onConfirm={handleStopOrdering}
+      />
+
       <ExtendDeadlineDialog
         open={extendDialogOpen}
         submitting={extending}
@@ -576,6 +683,17 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
           }
         }}
         onConfirm={handleExtendDeadline}
+      />
+
+      <CompleteOrderDialog
+        open={completeDialogOpen}
+        submitting={completing}
+        onClose={() => {
+          if (!completing) {
+            setCompleteDialogOpen(false);
+          }
+        }}
+        onConfirm={handleCompleteOrder}
       />
 
       {toast ? (

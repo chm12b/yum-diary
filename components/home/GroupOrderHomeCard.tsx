@@ -2,25 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import PaperCard from "@/components/ui/PaperCard";
 import { homeAssets } from "@/src/lib/home-assets";
 import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
-import {
-  listActiveGroupOrders,
-  type GroupOrder,
-} from "@/src/services/group-order";
 
-type LoadStatus = "loading" | "ready" | "error";
-
-function GroupOrderCardShell({
-  subtitle,
-  disabled,
-}: {
-  subtitle: string;
-  disabled: boolean;
-}) {
+function GroupOrderCardShell({ disabled }: { disabled: boolean }) {
   return (
     <PaperCard
       className={`flex items-center gap-4 px-5 py-5 ${
@@ -39,8 +26,8 @@ function GroupOrderCardShell({
         <span className="block text-base font-medium text-text-primary">
           揪團點餐
         </span>
-        <span className="mt-1 block whitespace-pre-line text-sm text-text-secondary">
-          {subtitle}
+        <span className="mt-1 block text-sm text-text-secondary">
+          查看目前點餐與歷史紀錄。
         </span>
       </span>
       <Image
@@ -56,45 +43,11 @@ function GroupOrderCardShell({
 }
 
 /**
- * Home reminder for active group orders.
- * Whole card is the only click target when active; no secondary button.
+ * Home entry for group orders — always opens Orders Hub (/orders).
+ * Status (OPEN / CLOSED / History) is shown only on the Hub.
  */
 export default function GroupOrderHomeCard() {
-  const { currentGroupId, loading: groupLoading, revision } =
-    useCurrentGroup();
-  const [status, setStatus] = useState<LoadStatus>("loading");
-  const [orders, setOrders] = useState<GroupOrder[]>([]);
-  const [loadedGroupId, setLoadedGroupId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (groupLoading || !currentGroupId) {
-      return;
-    }
-
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const rows = await listActiveGroupOrders(currentGroupId);
-        if (cancelled) {
-          return;
-        }
-        setOrders(rows);
-        setLoadedGroupId(currentGroupId);
-        setStatus("ready");
-      } catch {
-        if (!cancelled) {
-          setOrders([]);
-          setLoadedGroupId(currentGroupId);
-          setStatus("error");
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentGroupId, groupLoading, revision]);
+  const { currentGroupId, loading: groupLoading } = useCurrentGroup();
 
   if (groupLoading) {
     return (
@@ -108,56 +61,17 @@ export default function GroupOrderHomeCard() {
   if (!currentGroupId) {
     return (
       <div aria-disabled="true">
-        <GroupOrderCardShell
-          disabled
-          subtitle={"⚪ 目前沒有進行中的點餐。"}
-        />
-      </div>
-    );
-  }
-
-  if (status === "loading" || loadedGroupId !== currentGroupId) {
-    return (
-      <div
-        className="h-[88px] w-full animate-pulse rounded-[1.25rem] bg-border/80"
-        aria-hidden
-      />
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <div aria-disabled="true">
-        <GroupOrderCardShell
-          disabled
-          subtitle={"⚪ 目前沒有進行中的點餐。"}
-        />
-      </div>
-    );
-  }
-
-  const primaryOrder = orders[0] ?? null;
-
-  if (!primaryOrder) {
-    return (
-      <div aria-disabled="true">
-        <GroupOrderCardShell
-          disabled
-          subtitle={"⚪ 目前沒有進行中的點餐。"}
-        />
+        <GroupOrderCardShell disabled />
       </div>
     );
   }
 
   return (
     <Link
-      href={`/orders/${primaryOrder.id}`}
+      href="/orders"
       className="block transition-transform active:scale-[0.98]"
     >
-      <GroupOrderCardShell
-        disabled={false}
-        subtitle={"🟢  目前有進行中的點餐，\n快點進來看看！"}
-      />
+      <GroupOrderCardShell disabled={false} />
     </Link>
   );
 }

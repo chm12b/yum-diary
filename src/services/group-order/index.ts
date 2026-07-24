@@ -1,7 +1,12 @@
 export { createGroupOrder } from "./createGroupOrder";
+export { closeGroupOrder } from "./closeGroupOrder";
+export type { CloseGroupOrderInput } from "./closeGroupOrder";
+export { completeGroupOrder } from "./completeGroupOrder";
+export type { CompleteGroupOrderInput } from "./completeGroupOrder";
 export {
   assertGroupOrderAcceptsEdits,
   ensureGroupOrderDeadlineClosed,
+  ensureGroupOrderStatus,
   isGroupOrderPastDeadline,
   requireWritableGroupOrder,
 } from "./deadline";
@@ -15,6 +20,10 @@ export type {
 } from "./extendGroupOrderDeadline";
 export { getGroupOrder } from "./getGroupOrder";
 export { listActiveGroupOrders } from "./listActiveGroupOrders";
+export { listCompletedGroupOrders } from "./listCompletedGroupOrders";
+export type { ListCompletedGroupOrdersOptions } from "./listCompletedGroupOrders";
+export { listGroupOrderStats } from "./listGroupOrderStats";
+export type { GroupOrderStats } from "./listGroupOrderStats";
 export { updateGroupOrder } from "./updateGroupOrder";
 export {
   GROUP_ORDER_DESCRIPTION_MAX,

@@ -23,6 +23,7 @@ export type GroupOrder = {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  completedAt: string | null;
 };
 
 export type CreateGroupOrderInput = {

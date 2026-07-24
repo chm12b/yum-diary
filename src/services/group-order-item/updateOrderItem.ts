@@ -85,7 +85,7 @@ export async function updateOrderItem(
 
   const { data: menuItem, error: menuError } = await supabase
     .from("menu_items")
-    .select("name, price")
+    .select("name, price, display_order")
     .eq("id", data.menu_item_id)
     .maybeSingle();
 
@@ -99,6 +99,7 @@ export async function updateOrderItem(
       ? {
           name: menuItem.name,
           price: menuItem.price == null ? null : Number(menuItem.price),
+          displayOrder: menuItem.display_order,
         }
       : null,
   );

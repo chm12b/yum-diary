@@ -38,7 +38,7 @@ export async function createOrderItem(
 
   const { data: menuItem, error: menuError } = await supabase
     .from("menu_items")
-    .select("id, restaurant_id, name, price")
+    .select("id, restaurant_id, name, price, display_order")
     .eq("id", menuItemId)
     .maybeSingle();
 
@@ -55,6 +55,7 @@ export async function createOrderItem(
   const menuSnapshot = {
     name: menuItem.name,
     price: menuItem.price == null ? null : Number(menuItem.price),
+    displayOrder: menuItem.display_order,
   };
 
   const { data: existing, error: existingError } = await supabase

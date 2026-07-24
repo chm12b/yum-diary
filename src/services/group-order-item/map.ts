@@ -2,7 +2,11 @@ import type { GroupOrderItem, GroupOrderItemRecord } from "./types";
 
 export function toGroupOrderItem(
   row: GroupOrderItemRecord,
-  menu?: { name: string; price: number | null } | null,
+  menu?: {
+    name: string;
+    price: number | null;
+    displayOrder?: number;
+  } | null,
 ): GroupOrderItem {
   return {
     id: row.id,
@@ -14,6 +18,7 @@ export function toGroupOrderItem(
     updatedAt: row.updated_at,
     menuItemName: menu?.name?.trim() || "未知品項",
     unitPrice: menu?.price == null ? null : Number(menu.price),
+    displayOrder: menu?.displayOrder ?? 1,
   };
 }
 

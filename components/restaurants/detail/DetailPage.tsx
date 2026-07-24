@@ -5,9 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import DetailActionBar from "@/components/restaurants/detail/DetailActionBar";
 import DetailHeader from "@/components/restaurants/detail/DetailHeader";
-import GroupOrderEntrySection from "@/components/restaurants/detail/GroupOrderEntrySection";
 import Identity from "@/components/restaurants/detail/Identity";
-import MenuEntrySection from "@/components/restaurants/detail/MenuEntrySection";
 import MenuSection from "@/components/restaurants/detail/MenuSection";
 import MyRecordSection from "@/components/restaurants/detail/MyRecordSection";
 import RestaurantInfoList from "@/components/restaurants/detail/RestaurantInfoList";
@@ -456,6 +454,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         isFavorite={isFavorite}
         isFavoriteLoading={isFavoriteToggleLoading || !isFavoriteResolved}
         restaurantId={restaurant.id}
+        restaurantName={restaurant.name}
         canSyncGoogle={Boolean(restaurant.googlePlaceId)}
         isSyncing={isSyncing}
         onSyncGoogle={() => {
@@ -464,18 +463,13 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         onToggleFavorite={() => {
           void handleToggleFavorite();
         }}
+        onToast={showToast}
       />
       <Identity restaurant={restaurant} />
       <RestaurantInfoList restaurant={restaurant} />
       <MenuSection
         restaurantId={restaurant.id}
         restaurantName={restaurant.name}
-      />
-      <MenuEntrySection restaurantId={restaurant.id} />
-      <GroupOrderEntrySection
-        restaurantId={restaurant.id}
-        restaurantName={restaurant.name}
-        onToast={showToast}
       />
       <MyRecordSection
         restaurant={restaurant}
@@ -487,9 +481,6 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       <DetailActionBar
         restaurantId={restaurant.id}
         restaurantName={restaurant.name}
-        latitude={restaurant.latitude}
-        longitude={restaurant.longitude}
-        address={restaurant.address}
         onToast={showToast}
       />
 

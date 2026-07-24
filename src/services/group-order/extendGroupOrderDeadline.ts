@@ -16,7 +16,7 @@ export type ExtendGroupOrderDeadlineInput = {
 };
 
 /**
- * Host-only: extend close_at by N minutes and reopen as OPEN.
+ * Host-only: reopen ordering by extending close_at and setting status to OPEN.
  * Base time is max(close_at, now) so a past deadline still yields a future close_at.
  */
 export async function extendGroupOrderDeadline(
@@ -54,15 +54,15 @@ export async function extendGroupOrderDeadline(
   }
 
   if (order.createdBy !== user.id) {
-    throw new Error("Only the host can extend the deadline");
+    throw new Error("Only the host can reopen the group order");
   }
 
   if (order.status === "COMPLETED") {
-    throw new Error("Completed group order cannot be extended");
+    throw new Error("Completed group order cannot be reopened");
   }
 
   if (order.status !== "CLOSED") {
-    throw new Error("Only a closed group order can be extended");
+    throw new Error("Only a closed group order can be reopened");
   }
 
   const closeAtMs = new Date(order.closeAt).getTime();

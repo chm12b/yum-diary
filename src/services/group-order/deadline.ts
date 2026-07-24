@@ -11,15 +11,24 @@ export function isGroupOrderPastDeadline(order: GroupOrder): boolean {
 }
 
 /**
- * If status is OPEN and now >= close_at, persist CLOSED and return the updated row.
+ * Resolve and persist derived group-order status.
+ * Currently: OPEN past close_at → CLOSED.
+ * Extension point for future automatic status transitions.
  */
-export async function ensureGroupOrderDeadlineClosed(
+export async function ensureGroupOrderStatus(
   order: GroupOrder,
 ): Promise<GroupOrder> {
   if (order.status === "OPEN" && isGroupOrderPastDeadline(order)) {
     return updateGroupOrder({ id: order.id, status: "CLOSED" });
   }
   return order;
+}
+
+/** @deprecated Prefer {@link ensureGroupOrderStatus}. */
+export async function ensureGroupOrderDeadlineClosed(
+  order: GroupOrder,
+): Promise<GroupOrder> {
+  return ensureGroupOrderStatus(order);
 }
 
 export function assertGroupOrderAcceptsEdits(order: GroupOrder): void {
@@ -29,7 +38,7 @@ export function assertGroupOrderAcceptsEdits(order: GroupOrder): void {
 }
 
 /**
- * Load order, auto-close if past deadline, then assert edits are allowed.
+ * Load order, resolve status (e.g. auto-close), then assert edits are allowed.
  */
 export async function requireWritableGroupOrder(
   groupOrderId: string,
@@ -38,7 +47,7 @@ export async function requireWritableGroupOrder(
   if (!order) {
     throw new Error("Group order not found");
   }
-  const resolved = await ensureGroupOrderDeadlineClosed(order);
+  const resolved = await ensureGroupOrderStatus(order);
   assertGroupOrderAcceptsEdits(resolved);
   return resolved;
 }

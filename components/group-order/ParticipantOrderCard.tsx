@@ -20,6 +20,8 @@ export type ParticipantOrderCardProps = {
   items: GroupOrderLineItem[];
   onEditOrder?: () => void;
   editDisabled?: boolean;
+  /** Hide 開始／新增餐點 CTA (e.g. COMPLETED). */
+  hideEditCta?: boolean;
   joining?: boolean;
   /** Current-user only: adjust quantity (+1 / -1). */
   onQuantityChange?: (itemId: string, delta: 1 | -1) => void;
@@ -38,6 +40,7 @@ export default function ParticipantOrderCard({
   items,
   onEditOrder,
   editDisabled = false,
+  hideEditCta = false,
   joining = false,
   onQuantityChange,
   quantityBusyId = null,
@@ -163,7 +166,7 @@ export default function ParticipantOrderCard({
         </p>
       ) : null}
 
-      {isCurrentUser ? (
+      {isCurrentUser && !hideEditCta ? (
         <button
           type="button"
           onClick={onEditOrder}

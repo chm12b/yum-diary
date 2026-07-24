@@ -342,6 +342,7 @@ export type Database = {
           created_by: string;
           created_at: string;
           updated_at: string;
+          completed_at: string | null;
         };
         Insert: {
           id?: string;
@@ -354,6 +355,7 @@ export type Database = {
           created_by: string;
           created_at?: string;
           updated_at?: string;
+          completed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -366,6 +368,7 @@ export type Database = {
           created_by?: string;
           created_at?: string;
           updated_at?: string;
+          completed_at?: string | null;
         };
         Relationships: [];
       };

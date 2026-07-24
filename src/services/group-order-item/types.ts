@@ -20,6 +20,7 @@ export type GroupOrderItem = {
   updatedAt: string;
   menuItemName: string;
   unitPrice: number | null;
+  displayOrder: number;
 };
 
 export type CreateOrderItemInput = {

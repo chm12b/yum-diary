@@ -10,14 +10,22 @@ type EntryCardProps = {
   label: string;
   subtitle?: string;
   iconSrc?: string;
+  iconWidth?: 80 | 110;
   leading?: ReactNode;
 };
+
+/** Keep text column aligned across cards; wider icons compensate with more negative margin. */
+const iconLayoutClass = {
+  80: "h-[70px] w-[80px] -ml-[10px] -mr-[20px]",
+  110: "h-[70px] w-[110px] -ml-[30px] -mr-[30px]",
+} as const;
 
 export default function EntryCard({
   href,
   label,
   subtitle,
   iconSrc,
+  iconWidth = 80,
   leading,
 }: EntryCardProps) {
   return (
@@ -27,10 +35,10 @@ export default function EntryCard({
           <Image
             src={iconSrc}
             alt=""
-            width={80}
-            height={60}
+            width={iconWidth}
+            height={70}
             aria-hidden
-            className="h-[60px] w-[80px] shrink-0 object-contain -ml-[10px] -mr-[20px]"
+            className={`${iconLayoutClass[iconWidth]} shrink-0 object-contain`}
           />
         ) : leading ? (
           <span className="flex h-12 w-12 shrink-0 items-center justify-center text-2xl leading-none">

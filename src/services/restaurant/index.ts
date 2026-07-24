@@ -1,5 +1,6 @@
 export { createRestaurant } from "./createRestaurant";
 export { getRestaurant } from "./getRestaurant";
+export { listRestaurantNamesByIds } from "./listRestaurantNamesByIds";
 export {
   DEFAULT_RESTAURANT_SORT,
   listRestaurants,

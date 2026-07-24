@@ -1,3 +1,5 @@
+"use client";
+
 import {
   CalendarOff,
   Clock,
@@ -24,6 +26,34 @@ function formatHourSlots(slots: string[]): string {
     .join("\n");
 }
 
+function hasFiniteCoord(value: number | null | undefined): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function openNavigation(input: {
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string | null;
+}) {
+  if (hasFiniteCoord(input.latitude) && hasFiniteCoord(input.longitude)) {
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${input.latitude},${input.longitude}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+    return;
+  }
+
+  const trimmedAddress = input.address?.trim();
+  if (trimmedAddress) {
+    window.open(
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trimmedAddress)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  }
+}
+
 export default function RestaurantInfoList({
   restaurant,
 }: RestaurantInfoListProps) {
@@ -31,6 +61,8 @@ export default function RestaurantInfoList({
     openingHours,
     phoneNumber,
     address,
+    latitude,
+    longitude,
     websiteUrl,
     notes,
     googlePlaceId,
@@ -115,7 +147,21 @@ export default function RestaurantInfoList({
 
           {/* Row 3: Address */}
           {hasAddress ? (
-            <RestaurantInfoItem icon={MapPin} title="地址">
+            <RestaurantInfoItem
+              icon={MapPin}
+              title="地址"
+              titleAction={
+                <button
+                  type="button"
+                  onClick={() => {
+                    openNavigation({ latitude, longitude, address });
+                  }}
+                  className="text-xs font-medium text-caramel transition-colors hover:underline"
+                >
+                  🧭 導航
+                </button>
+              }
+            >
               <p className="whitespace-pre-line">{address}</p>
             </RestaurantInfoItem>
           ) : null}

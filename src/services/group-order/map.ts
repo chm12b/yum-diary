@@ -19,5 +19,6 @@ export function toGroupOrder(row: GroupOrderRecord): GroupOrder {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    completedAt: row.completed_at,
   };
 }

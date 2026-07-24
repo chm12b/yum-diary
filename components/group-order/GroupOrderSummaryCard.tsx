@@ -4,8 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  ClipboardList,
-  MoreHorizontal,
+  RefreshCw,
   Share2,
 } from "lucide-react";
 
@@ -21,12 +20,6 @@ type GroupOrderSummaryCardProps = {
   itemCount: number;
   estimatedTotal: number;
   onOpenOverview?: () => void;
-};
-
-const STATUS_TEXT: Record<GroupOrderStatus, string> = {
-  OPEN: "點餐中",
-  CLOSED: "已截止點餐",
-  COMPLETED: "已完成",
 };
 
 export default function GroupOrderSummaryCard({
@@ -67,37 +60,52 @@ export default function GroupOrderSummaryCard({
               onClick={onOpenOverview}
               className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-milk-tea/80 px-2.5 py-1.5 text-xs font-bold text-[#6E4F38] shadow-soft transition-colors hover:bg-milk-tea active:scale-[0.98]"
             >
-              <ClipboardList className="h-3.5 w-3.5" strokeWidth={2.2} />
+              <span aria-hidden>📋</span>
               訂單總覽
             </button>
           </div>
 
-          <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold tracking-wide ${
-                status === "OPEN"
-                  ? "bg-status-open-bg text-status-open-fg"
-                  : status === "CLOSED"
-                    ? "bg-status-closed-bg text-status-closed-fg"
-                    : "bg-status-unknown-bg text-status-unknown-fg"
-              }`}
-            >
-              {status}
-            </span>
-            <span className="text-sm font-medium text-[#6E4F38]">
-              {STATUS_TEXT[status]}
-            </span>
-          </div>
+          {status === "OPEN" ? (
+            <>
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-full bg-status-open-bg px-2 py-0.5 text-[11px] font-bold tracking-wide text-status-open-fg">
+                  OPEN
+                </span>
+                <span className="text-sm font-medium text-[#6E4F38]">
+                  🟢 點餐中
+                </span>
+              </div>
+              <p className="mt-2 flex items-center gap-1 text-sm text-text-secondary">
+                <span aria-hidden>🕒</span>
+                <span>
+                  截止時間：
+                  <span className="font-semibold text-soft-orange">
+                    {deadlineLabel}
+                  </span>
+                </span>
+              </p>
+            </>
+          ) : null}
 
-          <p className="mt-2 flex items-center gap-1 text-sm text-text-secondary">
-            <span aria-hidden>🕒</span>
-            <span>
-              截止時間：
-              <span className="font-semibold text-soft-orange">
-                {deadlineLabel}
-              </span>
-            </span>
-          </p>
+          {status === "CLOSED" ? (
+            <div className="mt-2.5">
+              <p className="text-sm font-bold text-[#6E4F38]">
+                🔴 點餐已截止
+              </p>
+              <p className="mt-0.5 text-sm text-text-secondary">
+                目前無法修改餐點。
+              </p>
+            </div>
+          ) : null}
+
+          {status === "COMPLETED" ? (
+            <div className="mt-2.5">
+              <p className="text-sm font-bold text-[#6E4F38]">
+                ✅ 訂單已完成
+              </p>
+              <p className="mt-0.5 text-sm text-text-secondary">謝謝大家！</p>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -127,10 +135,12 @@ export default function GroupOrderSummaryCard({
 
 export function GroupOrderPageHeader({
   onShare,
-  onMore,
+  onRefresh,
+  refreshing = false,
 }: {
   onShare?: () => void;
-  onMore?: () => void;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }) {
   const router = useRouter();
 
@@ -138,8 +148,8 @@ export function GroupOrderPageHeader({
     <header className="grid grid-cols-[2.25rem_1fr_auto] items-center gap-2 px-5 pt-4 pb-3">
       <button
         type="button"
-        aria-label="返回上一頁"
-        onClick={() => router.back()}
+        aria-label="返回點餐首頁"
+        onClick={() => router.push("/orders")}
         className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-rice-white text-[#6E4F38] shadow-soft"
       >
         <ArrowLeft className="h-5 w-5" strokeWidth={2} />
@@ -158,14 +168,22 @@ export function GroupOrderPageHeader({
             <Share2 className="h-4 w-4" strokeWidth={2.2} />
           </button>
         ) : null}
-        <button
-          type="button"
-          aria-label="更多"
-          onClick={onMore}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-rice-white text-[#6E4F38] shadow-soft"
-        >
-          <MoreHorizontal className="h-4 w-4" strokeWidth={2.2} />
-        </button>
+        {onRefresh ? (
+          <button
+            type="button"
+            aria-label="重新整理"
+            disabled={refreshing}
+            onClick={onRefresh}
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-rice-white text-[#6E4F38] shadow-soft disabled:opacity-70"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+              strokeWidth={2.2}
+            />
+          </button>
+        ) : (
+          <span className="h-9 w-9" aria-hidden />
+        )}
       </div>
     </header>
   );

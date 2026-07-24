@@ -8,6 +8,7 @@ const homeEntries = [
     label: "逛逛附近餐廳",
     subtitle: "看看附近正在營業的店家",
     iconSrc: homeAssets.iconNearbyRestaurant,
+    iconWidth: 110,
     href: `/restaurants?${NEARBY_QUICK_BROWSE_QUERY}=1`,
   },
   {
@@ -15,6 +16,7 @@ const homeEntries = [
     label: "常吃餐廳",
     subtitle: "看看你最常回訪的店家",
     iconSrc: homeAssets.iconFrequentRestaurants,
+    iconWidth: 80,
     href: "/restaurants/frequent",
   },
 ] as const;
@@ -29,6 +31,7 @@ export default function HomeEntryList() {
           label={entry.label}
           subtitle={entry.subtitle}
           iconSrc={entry.iconSrc}
+          iconWidth={entry.iconWidth}
         />
       ))}
     </section>

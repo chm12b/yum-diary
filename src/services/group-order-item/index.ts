@@ -1,5 +1,12 @@
 export { createOrderItem } from "./createOrderItem";
 export { deleteOrderItem } from "./deleteOrderItem";
+export {
+  buildOrderSummaryCopyText,
+  buildOrderSummaryGroups,
+} from "./buildOrderSummary";
+export type {
+  SummaryMenuGroup,
+} from "./buildOrderSummary";
 export { listMyOrderItems, listOrderItems } from "./listMyOrderItems";
 export { lineTotal } from "./map";
 export { updateOrderItem } from "./updateOrderItem";

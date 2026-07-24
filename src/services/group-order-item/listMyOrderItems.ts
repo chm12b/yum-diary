@@ -15,7 +15,7 @@ async function attachMenuSnapshots(
   const supabase = createClient();
   const { data: menuRows, error } = await supabase
     .from("menu_items")
-    .select("id, name, price")
+    .select("id, name, price, display_order")
     .in("id", menuItemIds);
 
   if (error) {
@@ -28,6 +28,7 @@ async function attachMenuSnapshots(
       {
         name: row.name,
         price: row.price == null ? null : Number(row.price),
+        displayOrder: row.display_order,
       },
     ]),
   );

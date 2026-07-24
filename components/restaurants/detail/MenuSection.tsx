@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import MenuGallery from "@/components/restaurants/detail/MenuGallery";
 import MenuLightbox from "@/components/restaurants/detail/MenuLightbox";
 import SectionHeading from "@/components/restaurants/detail/SectionHeading";
 import { homeAssets } from "@/src/lib/home-assets";
+import { listMenuItems } from "@/src/services/menu-item";
 import { listMenuPhotos, type MenuPhoto } from "@/src/services/menu-photo";
 
 type MenuSectionProps = {
@@ -22,6 +24,7 @@ export default function MenuSection({
   const [photos, setPhotos] = useState<MenuPhoto[]>([]);
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [menuItemCount, setMenuItemCount] = useState(0);
 
   async function loadPhotos() {
     try {
@@ -37,16 +40,51 @@ export default function MenuSection({
     void loadPhotos();
   }, [restaurantId]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const rows = await listMenuItems(restaurantId);
+        if (!cancelled) {
+          setMenuItemCount(rows.length);
+        }
+      } catch {
+        if (!cancelled) {
+          setMenuItemCount(0);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [restaurantId]);
+
   const hasPhotos = photos.length > 0;
+  const showBrowseLink = menuItemCount > 0;
 
   return (
     <section className="px-5 pt-5">
-      <SectionHeading
-        iconSrc={homeAssets.storeMenu}
-        title={hasPhotos ? "菜單（點擊可放大）" : "菜單"}
-        iconSize={50}
-        className="-mt-[10px] -mb-[2px] flex items-center gap-2"
-      />
+      <div className="-mt-[10px] -mb-[2px] flex items-center justify-between gap-3">
+        <SectionHeading
+          iconSrc={homeAssets.storeMenu}
+          title={hasPhotos ? "菜單（點擊可放大）" : "菜單"}
+          iconSize={50}
+          className="flex min-w-0 items-center gap-2"
+        />
+        {showBrowseLink ? (
+          <Link
+            href={`/restaurants/${restaurantId}/menu`}
+            className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-milk-tea px-3.5 text-sm font-medium text-text-primary transition-[filter] hover:brightness-[0.97] active:scale-[0.98]"
+          >
+            瀏覽品項
+            <span aria-hidden className="text-base leading-none">
+              ›
+            </span>
+          </Link>
+        ) : null}
+      </div>
 
       {status === "loading" ? (
         <div className="flex gap-3 overflow-hidden pb-1" aria-hidden>

@@ -14,7 +14,7 @@ import {
   type GroupOrderItem,
 } from "@/src/services/group-order-item";
 import {
-  ensureGroupOrderDeadlineClosed,
+  ensureGroupOrderStatus,
   getGroupOrder,
   type GroupOrder,
 } from "@/src/services/group-order";
@@ -168,7 +168,7 @@ export default function MyOrderPage({ orderId }: MyOrderPageProps) {
           return;
         }
 
-        const nextOrder = await ensureGroupOrderDeadlineClosed(loaded);
+        const nextOrder = await ensureGroupOrderStatus(loaded);
         if (cancelled) {
           return;
         }

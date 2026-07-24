@@ -2,12 +2,15 @@
 
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 
 type MenuPageHeaderProps = {
   title: string;
   subtitle?: string;
   /** When set, replaces default router.back(). */
   onBack?: () => void;
+  /** Optional right-side action (e.g. copy). */
+  rightAction?: ReactNode;
 };
 
 const iconButtonClass =
@@ -17,6 +20,7 @@ export default function MenuPageHeader({
   title,
   subtitle,
   onBack,
+  rightAction,
 }: MenuPageHeaderProps) {
   const router = useRouter();
 
@@ -40,7 +44,7 @@ export default function MenuPageHeader({
         <h1 className="justify-self-center text-center font-display text-base font-bold text-deep-brown">
           {title}
         </h1>
-        <div />
+        <div className="justify-self-end">{rightAction ?? null}</div>
       </div>
       {subtitle ? (
         <p className="mt-1 truncate text-center text-xs text-text-secondary">
