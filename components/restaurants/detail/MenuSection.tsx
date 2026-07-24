@@ -76,7 +76,7 @@ export default function MenuSection({
         {showBrowseLink ? (
           <Link
             href={`/restaurants/${restaurantId}/menu`}
-            className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full bg-milk-tea px-3.5 text-sm font-medium text-text-primary transition-[filter] hover:brightness-[0.97] active:scale-[0.98]"
+            className="inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full border border-caramel/10 bg-border px-3.5 text-sm font-medium text-deep-brown transition-[filter] hover:brightness-[0.97] active:scale-[0.98]"
           >
             瀏覽品項
             <span aria-hidden className="text-base leading-none">

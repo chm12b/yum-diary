@@ -151,6 +151,15 @@ export default function DetailHeader({
                 role="menu"
                 className="absolute top-11 right-0 z-30 min-w-[13.5rem] overflow-hidden rounded-2xl border border-border bg-rice-white py-1 shadow-card"
               >
+                <Link
+                  href={`/restaurants/${restaurantId}/edit`}
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                  className={menuItemClass}
+                >
+                  <Pencil className="h-4 w-4 shrink-0 text-caramel" strokeWidth={2} />
+                  編輯餐廳
+                </Link>
                 <button
                   type="button"
                   role="menuitem"
@@ -163,15 +172,6 @@ export default function DetailHeader({
                   <Share className="h-4 w-4 shrink-0 text-caramel" strokeWidth={2} />
                   分享餐廳
                 </button>
-                <Link
-                  href={`/restaurants/${restaurantId}/edit`}
-                  role="menuitem"
-                  onClick={() => setMenuOpen(false)}
-                  className={menuItemClass}
-                >
-                  <Pencil className="h-4 w-4 shrink-0 text-caramel" strokeWidth={2} />
-                  編輯餐廳
-                </Link>
                 {canSyncGoogle ? (
                   <button
                     type="button"
