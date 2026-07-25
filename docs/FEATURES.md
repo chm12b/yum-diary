@@ -282,7 +282,27 @@ Profile／Group Service（更新目前群組）
 ### Related API
 
 Restaurant Service（Create）  
-Google Places Search／Detail／Photo（可選）
+Google Places Search／Detail／Photo（可選）  
+Auto Geocoding Service（`geocodeAddress`；僅 lat/lng）
+
+---
+
+## Auto Geocoding
+
+### Purpose
+
+手動新增／編輯地址時，自動取得 `latitude` / `longitude`，供距離與 Nearby 使用。
+
+### Rules
+
+- 成功時**僅**寫入 `latitude`、`longitude`。
+- **不得**寫入 `google_place_id`（借用附近地標座標 ≠ 綁定該 Google Place）。
+- `google_place_id` 僅允許 Google Auto Fill 或未來使用者手動綁定。
+- 失敗不阻斷建立／更新；座標可為 `NULL`。
+
+### Related API
+
+`src/services/google/geocodeAddress.ts`（重用 Places Text Search → Place Detail）
 
 ---
 
@@ -323,7 +343,7 @@ Google Places API (New) `places:searchText`
 
 ✅ 已完成
 
-可帶入店名、地址、電話、網站、簡化營業時間、App 分類、Google 店家照片預覽；菜單與備註永不自動填入；成功提示已實作。
+可帶入店名、地址、電話、網站、簡化營業時間、App 分類、Google 店家照片預覽；菜單與備註永不自動填入；成功提示已實作。寫入 `google_place_id` 的唯一既有路徑（與未來手動綁定並列；Auto Geocoding 不寫入）。
 
 ### Future Plan
 

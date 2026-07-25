@@ -75,7 +75,8 @@ export default function RestaurantInfoList({
       : "無固定公休";
 
   const hoursLabel = formatHourSlots(openingHours.slots);
-  const hasPhone = Boolean(phoneNumber?.trim());
+  const phone = phoneNumber?.trim() ?? "";
+  const hasPhone = Boolean(phone);
   const hasWebsite = Boolean(websiteUrl?.trim());
   const hasAddress = Boolean(address?.trim());
   const hasNotes = Boolean(notes?.trim());
@@ -125,7 +126,12 @@ export default function RestaurantInfoList({
             <div className="grid grid-cols-2 items-start gap-x-4">
               {hasPhone ? (
                 <RestaurantInfoItem icon={Phone} title="電話">
-                  <p>{phoneNumber}</p>
+                  <a
+                    href={`tel:${phone.replace(/[\s()-]/g, "")}`}
+                    className="font-medium text-caramel transition-colors hover:underline"
+                  >
+                    {phone}
+                  </a>
                 </RestaurantInfoItem>
               ) : (
                 <div />

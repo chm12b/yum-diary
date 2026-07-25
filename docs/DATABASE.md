@@ -42,7 +42,8 @@
 ### 1.5 Google 是輔助，手動建檔必須可行
 
 - `google_place_id` 可為 `NULL`（純手動新增）。
-- 有值表示曾對應 Google Place；同一群組內同一 Place 不應重複匯入。
+- 有值表示使用者明確對應 Google Place（Auto Fill 或手動綁定）；同一群組內同一 Place 不應重複匯入。
+- Auto Geocoding 僅取得 `latitude` / `longitude`，不得因此寫入 `google_place_id`（地址附近的 Place ≠ 這間手動餐廳）。
 
 ---
 
@@ -62,7 +63,7 @@
 | `website_url` | `text` | No | 官方或相關網站 URL。可為 `NULL`。 |
 | `notes` | `text` | No | 使用者備註。可為 `NULL`；建議上限約 200 字元（對齊新增表單）。永不由 Google Auto Fill 寫入。 |
 | `business_hours` | `jsonb` | No | 營業時間結構（見第 3 節）。可為 `NULL` 表示未設定。 |
-| `google_place_id` | `text` | No | Google Place ID。`NULL` = 手動新增；有值 = 來自／對應 Google。建議與 `group_id` 組成 UNIQUE（允許多筆 `NULL`）。 |
+| `google_place_id` | `text` | No | Google Place ID。`NULL` = 手動新增或未綁定；有值 = 僅來自 Google Auto Fill 或使用者手動綁定。Auto Geocoding（依地址取 lat/lng）**不得**寫入此欄。建議與 `group_id` 組成 UNIQUE（允許多筆 `NULL`）。 |
 | `created_at` | `timestamptz` | Yes | 建立時間（UTC）。 |
 | `updated_at` | `timestamptz` | Yes | 最後更新時間（UTC）；建議由 trigger 維護。 |
 

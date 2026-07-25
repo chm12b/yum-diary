@@ -1,5 +1,6 @@
 import { createClient } from "@/src/lib/supabase/client";
 import { APP_CATEGORIES } from "@/src/lib/restaurants/category";
+import { geocodeAddress } from "@/src/services/google/geocodeAddress";
 
 import { resolveCityDistrict } from "./resolveCityDistrict";
 import type {
@@ -38,6 +39,10 @@ function sameNullable(
  * Address change → re-parse city/district via resolveCityDistrict().
  * Parse failure → keep existing city/district (never overwrite with null).
  * Address unchanged → do not re-parse or touch city/district.
+ *
+ * Address change → geocodeAddress(); success updates lat/lng only;
+ * failure clears lat/lng (never keep stale coordinates).
+ * Never writes google_place_id from geocoding.
  */
 export async function updateRestaurant(
   id: string,
@@ -110,6 +115,8 @@ export async function updateRestaurant(
     updated_at: string;
     city?: string | null;
     district?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   } = {
     name,
     category,
@@ -128,6 +135,21 @@ export async function updateRestaurant(
     if (parsed.city != null || parsed.district != null) {
       patch.city = parsed.city;
       patch.district = parsed.district;
+    }
+
+    if (nextAddress) {
+      const geo = await geocodeAddress(nextAddress);
+      if (geo.success) {
+        patch.latitude = geo.latitude;
+        patch.longitude = geo.longitude;
+      } else {
+        patch.latitude = null;
+        patch.longitude = null;
+      }
+    } else {
+      // Address cleared — drop stale coordinates only.
+      patch.latitude = null;
+      patch.longitude = null;
     }
   }
 

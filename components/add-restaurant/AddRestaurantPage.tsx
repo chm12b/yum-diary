@@ -481,10 +481,7 @@ export default function AddRestaurantPage({
               />
             </div>
           </section>
-          <WizardMenuStepFooter
-            onSkip={finishWizard}
-            onComplete={finishWizard}
-          />
+          <WizardMenuStepFooter onComplete={finishWizard} />
         </>
       ) : (
         <>

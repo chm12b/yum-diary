@@ -1,5 +1,6 @@
 import { createClient } from "@/src/lib/supabase/client";
 import { APP_CATEGORIES } from "@/src/lib/restaurants/category";
+import { geocodeAddress } from "@/src/services/google/geocodeAddress";
 
 import { resolveCityDistrict } from "./resolveCityDistrict";
 import type {
@@ -45,6 +46,10 @@ function isUniqueViolation(error: {
  * Insert a restaurant into the current user's group.
  * Throws on validation / auth / database errors.
  * Returns the inserted restaurant row.
+ *
+ * Manual address (no Auto Fill coords) → geocodeAddress() for lat/lng only.
+ * Never writes google_place_id from geocoding (Auto Fill / manual bind only).
+ * Geocode failure never blocks create.
  */
 export async function createRestaurant(
   input: CreateRestaurantInput,
@@ -72,7 +77,24 @@ export async function createRestaurant(
     throw new Error("Not authenticated");
   }
 
+  const address = optionalText(input.address);
   const googlePlaceId = optionalText(input.googlePlaceId);
+  let latitude = input.latitude ?? null;
+  let longitude = input.longitude ?? null;
+
+  const hasAutoFillCoords = latitude != null && longitude != null;
+
+  // Google Auto Fill already provided coords — skip geocode.
+  if (!hasAutoFillCoords && address) {
+    const geo = await geocodeAddress(address);
+    if (geo.success) {
+      latitude = geo.latitude;
+      longitude = geo.longitude;
+    } else {
+      latitude = null;
+      longitude = null;
+    }
+  }
 
   if (googlePlaceId) {
     const { data: existing, error: existingError } = await supabase
@@ -91,7 +113,6 @@ export async function createRestaurant(
     }
   }
 
-  const address = optionalText(input.address);
   const { city, district } = resolveCityDistrict(address);
 
   const coreRow: RestaurantInsert = {
@@ -105,8 +126,8 @@ export async function createRestaurant(
     notes: optionalText(input.note),
     business_hours: normalizeBusinessHours(input.businessHours),
     google_place_id: googlePlaceId,
-    latitude: input.latitude ?? null,
-    longitude: input.longitude ?? null,
+    latitude,
+    longitude,
     price_min: input.priceMin ?? null,
     price_max: input.priceMax ?? null,
   };
