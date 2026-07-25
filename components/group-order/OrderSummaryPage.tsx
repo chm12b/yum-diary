@@ -207,7 +207,7 @@ export default function OrderSummaryPage({ orderId }: OrderSummaryPageProps) {
           </div>
           <div className="text-center">
             <p className="text-[11px] text-text-secondary">
-              🧋 共 {stats.totalCups} 杯
+              🧋 共 {stats.totalCups} 項
             </p>
           </div>
           <div className="text-center">

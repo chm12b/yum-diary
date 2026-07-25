@@ -3,10 +3,8 @@
 import { BookOpen, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import AiMenuParserPreviewDialog from "@/components/add-restaurant/AiMenuParserPreviewDialog";
 import MenuGallery from "@/components/restaurants/detail/MenuGallery";
 import MenuLightbox from "@/components/restaurants/detail/MenuLightbox";
-import VisionOcrTestDialog from "@/components/add-restaurant/VisionOcrTestDialog";
 import {
   deleteMenuPhoto,
   listMenuPhotos,
@@ -14,10 +12,6 @@ import {
   uploadMenuPhoto,
   type MenuPhoto,
 } from "@/src/services/menu-photo";
-import { runAiMenuParserPoc } from "@/src/services/vision/runAiMenuParserPoc";
-import { runVisionOcrSmokeTest } from "@/src/services/vision/runVisionOcrSmokeTest";
-
-const IS_DEV = process.env.NODE_ENV === "development";
 
 type MenuManagerSectionProps = {
   restaurantId: string;
@@ -37,23 +31,6 @@ export default function MenuManagerSection({
   const [isUploading, setIsUploading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const [ocrDialogOpen, setOcrDialogOpen] = useState(false);
-  const [ocrLoading, setOcrLoading] = useState(false);
-  const [ocrText, setOcrText] = useState<string | null>(null);
-  const [ocrError, setOcrError] = useState<string | null>(null);
-  const [ocrPhotoLabel, setOcrPhotoLabel] = useState("");
-  const [ocrRunId, setOcrRunId] = useState(0);
-  const [parserDialogOpen, setParserDialogOpen] = useState(false);
-  const [parserLoading, setParserLoading] = useState(false);
-  const [parserRawText, setParserRawText] = useState<string | null>(null);
-  const [parserPrettyJson, setParserPrettyJson] = useState<string | null>(null);
-  const [parserIsValidJson, setParserIsValidJson] = useState<boolean | null>(
-    null,
-  );
-  const [parserModel, setParserModel] = useState<string | null>(null);
-  const [parserError, setParserError] = useState<string | null>(null);
-  const [parserPhotoLabel, setParserPhotoLabel] = useState("");
-  const [parserRunId, setParserRunId] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function loadPhotos() {
@@ -126,74 +103,6 @@ export default function MenuManagerSection({
         error instanceof Error ? error.message : "刪除失敗，請稍後再試";
       onToast?.("error", message);
       return photos.length;
-    }
-  }
-
-  async function handleOcrSmokeTest() {
-    if (!hasPhotos || ocrLoading || parserLoading) {
-      return;
-    }
-
-    const targetIndex = lightboxIndex ?? 0;
-    const target = photos[targetIndex];
-
-    if (!target) {
-      return;
-    }
-
-    setOcrDialogOpen(true);
-    setOcrLoading(true);
-    setOcrText(null);
-    setOcrError(null);
-    setOcrPhotoLabel(`菜單 ${targetIndex + 1}`);
-    setOcrRunId((value) => value + 1);
-
-    try {
-      const result = await runVisionOcrSmokeTest(target.url);
-      setOcrText(result.text);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "OCR 失敗，請稍後再試";
-      setOcrError(message);
-    } finally {
-      setOcrLoading(false);
-    }
-  }
-
-  async function handleAiMenuParserPoc() {
-    if (!hasPhotos || ocrLoading || parserLoading) {
-      return;
-    }
-
-    const targetIndex = lightboxIndex ?? 0;
-    const target = photos[targetIndex];
-
-    if (!target) {
-      return;
-    }
-
-    setParserDialogOpen(true);
-    setParserLoading(true);
-    setParserRawText(null);
-    setParserPrettyJson(null);
-    setParserIsValidJson(null);
-    setParserModel(null);
-    setParserError(null);
-    setParserPhotoLabel(`菜單 ${targetIndex + 1}`);
-    setParserRunId((value) => value + 1);
-
-    try {
-      const result = await runAiMenuParserPoc(target.url);
-      setParserRawText(result.rawText);
-      setParserPrettyJson(result.prettyJson);
-      setParserIsValidJson(result.isValidJson);
-      setParserModel(result.model);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "AI Parser 失敗，請稍後再試";
-      setParserError(message);
-    } finally {
-      setParserLoading(false);
     }
   }
 
@@ -278,31 +187,6 @@ export default function MenuManagerSection({
         </p>
       ) : null}
 
-      {IS_DEV && hasPhotos && status === "ready" ? (
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 pt-1">
-          <button
-            type="button"
-            onClick={() => {
-              void handleOcrSmokeTest();
-            }}
-            disabled={ocrLoading || parserLoading}
-            className="text-xs font-medium text-caramel underline-offset-2 transition-colors hover:text-deep-brown hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            ✨ OCR 測試（Dev）
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              void handleAiMenuParserPoc();
-            }}
-            disabled={ocrLoading || parserLoading}
-            className="text-xs font-medium text-caramel underline-offset-2 transition-colors hover:text-deep-brown hover:underline disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            ✨ AI Parser（Dev）
-          </button>
-        </div>
-      ) : null}
-
       {lightboxIndex !== null ? (
         <MenuLightbox
           photos={photos}
@@ -312,31 +196,6 @@ export default function MenuManagerSection({
           onDelete={handleDeletePhoto}
         />
       ) : null}
-
-      <VisionOcrTestDialog
-        key={ocrRunId}
-        open={ocrDialogOpen}
-        photoLabel={ocrPhotoLabel}
-        rawText={ocrText}
-        isLoading={ocrLoading}
-        error={ocrError}
-        onClose={() => setOcrDialogOpen(false)}
-        onCopied={() => onToast?.("success", "已複製 OCR 文字。")}
-      />
-
-      <AiMenuParserPreviewDialog
-        key={parserRunId}
-        open={parserDialogOpen}
-        photoLabel={parserPhotoLabel}
-        model={parserModel}
-        rawText={parserRawText}
-        prettyJson={parserPrettyJson}
-        isValidJson={parserIsValidJson}
-        isLoading={parserLoading}
-        error={parserError}
-        onClose={() => setParserDialogOpen(false)}
-        onCopied={() => onToast?.("success", "已複製 JSON。")}
-      />
     </div>
   );
 }

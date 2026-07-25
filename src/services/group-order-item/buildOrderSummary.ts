@@ -69,7 +69,7 @@ export function buildOrderSummaryCopyText(input: {
     "────────────",
     ...lines,
     "────────────",
-    `總杯數：${input.totalCups} 杯`,
+    `總項數：${input.totalCups} 項`,
     `總金額：$${input.totalAmount}`,
   ].join("\n");
 }
