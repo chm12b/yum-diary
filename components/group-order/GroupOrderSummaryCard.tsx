@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  MapPin,
   RefreshCw,
   Share2,
 } from "lucide-react";
@@ -13,6 +15,7 @@ import type { GroupOrderStatus } from "@/src/services/group-order";
 
 type GroupOrderSummaryCardProps = {
   title: string;
+  restaurantId: string;
   restaurantName: string;
   status: GroupOrderStatus;
   deadlineLabel: string;
@@ -24,6 +27,7 @@ type GroupOrderSummaryCardProps = {
 
 export default function GroupOrderSummaryCard({
   title,
+  restaurantId,
   restaurantName,
   status,
   deadlineLabel,
@@ -50,9 +54,25 @@ export default function GroupOrderSummaryCard({
               <h2 className="truncate font-display text-xl font-bold leading-tight text-[#6E4F38]">
                 {title}
               </h2>
-              <p className="mt-0.5 truncate text-sm text-text-secondary">
-                {restaurantName}
-              </p>
+              <Link
+                href={`/restaurants/${restaurantId}`}
+                aria-label={`前往 ${restaurantName} 餐廳詳情`}
+                className="mt-0.5 flex max-w-full cursor-pointer items-center gap-1 text-left text-sm text-text-secondary transition-colors hover:text-caramel active:opacity-80"
+              >
+                <MapPin
+                  className="h-3.5 w-3.5 shrink-0 text-sakura-pink"
+                  strokeWidth={2.5}
+                />
+                <span className="min-w-0 truncate">{restaurantName}</span>
+                <Image
+                  src={homeAssets.entryArrow}
+                  alt=""
+                  width={16}
+                  height={16}
+                  aria-hidden
+                  className="h-4 w-4 shrink-0 object-contain"
+                />
+              </Link>
             </div>
 
             <button

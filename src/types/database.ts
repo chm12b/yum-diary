@@ -245,6 +245,7 @@ export type Database = {
           visit_date: string;
           rating: number;
           notes: string;
+          group_order_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -255,6 +256,7 @@ export type Database = {
           visit_date: string;
           rating: number;
           notes: string;
+          group_order_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -265,6 +267,7 @@ export type Database = {
           visit_date?: string;
           rating?: number;
           notes?: string;
+          group_order_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

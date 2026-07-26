@@ -3,6 +3,8 @@ export const homeAssets = {
   iconNearbyFood: "/home/icon-nearby-food.png",
   iconNearbyRestaurant: "/home/nearby-restaurant-icon.png",
   iconFrequentRestaurants: "/home/icon-frequent-restaurants.png",
+  iconMyDiary: "/home/mydiary-icon.png",
+  myDiaryBunny: "/home/mydiary-bunny.png",
   iconGroupOrder: "/home/group-order-icon.png",
   groupOrderBunny: "/home/group-order-bunny.png",
   iconDice: "/home/icon-dice.png",

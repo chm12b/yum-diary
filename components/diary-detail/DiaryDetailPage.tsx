@@ -108,7 +108,6 @@ export default function DiaryDetailPage({ recordId }: DiaryDetailPageProps) {
   return (
     <div className="home-grid-bg min-h-full pb-6">
       <DiaryDetailHeader
-        restaurantId={record.restaurant_id}
         recordId={record.id}
         canEdit={Boolean(user && record.user_id === user.id)}
       />

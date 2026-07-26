@@ -38,6 +38,7 @@ import {
   type GroupOrderParticipant,
 } from "@/src/services/group-order-participant";
 import { listProfileDisplayNames } from "@/src/services/profile/profile.service";
+import { getMyRecordByGroupOrderId } from "@/src/services/record";
 import { getRestaurant } from "@/src/services/restaurant";
 
 type OrderDetailPageProps = {
@@ -215,6 +216,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const [completing, setCompleting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [linkedRecordId, setLinkedRecordId] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -258,11 +260,15 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
           return;
         }
 
-        const [restaurant, nextParticipants, nextItems] = await Promise.all([
-          getRestaurant(nextOrder.restaurantId),
-          listParticipants(nextOrder.id),
-          listOrderItems(nextOrder.id),
-        ]);
+        const [restaurant, nextParticipants, nextItems, linkedRecord] =
+          await Promise.all([
+            getRestaurant(nextOrder.restaurantId),
+            listParticipants(nextOrder.id),
+            listOrderItems(nextOrder.id),
+            nextOrder.status === "COMPLETED"
+              ? getMyRecordByGroupOrderId(nextOrder.id)
+              : Promise.resolve(null),
+          ]);
 
         if (cancelled) {
           return;
@@ -283,6 +289,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
         setParticipants(nextParticipants);
         setOrderItems(nextItems);
         setDisplayNames(names);
+        setLinkedRecordId(linkedRecord?.id ?? null);
         setStatus("ready");
       } catch {
         if (!cancelled) {
@@ -325,6 +332,14 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     };
   }, [orderItems, participants.length]);
 
+  const myOrderedQuantity = useMemo(() => {
+    const me = displayParticipants.find((card) => card.isCurrentUser);
+    if (!me) {
+      return 0;
+    }
+    return me.items.reduce((sum, item) => sum + item.quantity, 0);
+  }, [displayParticipants]);
+
   async function refreshParticipantsAndItems(
     groupOrderId: string,
     createdBy: string,
@@ -361,6 +376,12 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
       const nextOrder = await ensureGroupOrderStatus(loaded);
       setOrder(nextOrder);
       await refreshParticipantsAndItems(nextOrder.id, nextOrder.createdBy);
+      if (nextOrder.status === "COMPLETED") {
+        const linked = await getMyRecordByGroupOrderId(nextOrder.id);
+        setLinkedRecordId(linked?.id ?? null);
+      } else {
+        setLinkedRecordId(null);
+      }
       showToast("已更新點餐內容。");
     } catch {
       showToast("更新失敗，請再試一次。");
@@ -383,7 +404,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
     setJoinError(null);
     try {
       await createParticipant({ groupOrderId: order.id });
-      await refreshParticipantsAndItems(order.id, order.createdBy);
+      router.push(`/orders/${order.id}/my-order`);
     } catch {
       setJoinError("加入點餐失敗，請再試一次");
     } finally {
@@ -573,6 +594,13 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
   const showHostOpenActions = isHost && order.status === "OPEN";
   const showHostClosedActions = isHost && order.status === "CLOSED";
 
+  const showDiaryWriteCta =
+    order.status === "COMPLETED" &&
+    myOrderedQuantity > 0 &&
+    linkedRecordId == null;
+  const showDiaryViewCta =
+    order.status === "COMPLETED" && linkedRecordId != null;
+
   return (
     <div className="min-h-full bg-rice-white pb-10">
       <GroupOrderPageHeader
@@ -586,6 +614,7 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
       <div className="px-5">
         <GroupOrderSummaryCard
           title={order.title}
+          restaurantId={order.restaurantId}
           restaurantName={restaurantName}
           status={order.status}
           deadlineLabel={formatDeadlineLabel(order.closeAt)}
@@ -625,6 +654,28 @@ export default function OrderDetailPage({ orderId }: OrderDetailPageProps) {
             >
               完成訂單
             </button>
+          </div>
+        ) : null}
+
+        {showDiaryWriteCta ? (
+          <div className="mt-3">
+            <Link
+              href={`/orders/${order.id}/diary/new`}
+              className="flex h-11 w-full items-center justify-center rounded-full bg-sakura-pink text-sm font-bold text-deep-brown shadow-pink-button transition-transform active:scale-[0.98]"
+            >
+              📔 寫美食日記
+            </Link>
+          </div>
+        ) : null}
+
+        {showDiaryViewCta && linkedRecordId ? (
+          <div className="mt-3">
+            <Link
+              href={`/records/${linkedRecordId}`}
+              className="flex h-11 w-full items-center justify-center rounded-full border border-border bg-rice-white text-sm font-bold text-deep-brown shadow-soft transition-[filter] hover:brightness-[0.99] active:scale-[0.98]"
+            >
+              📖 查看美食日記
+            </Link>
           </div>
         ) : null}
       </div>

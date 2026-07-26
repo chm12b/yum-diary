@@ -10,14 +10,21 @@ type EntryCardProps = {
   label: string;
   subtitle?: string;
   iconSrc?: string;
-  iconWidth?: 80 | 110;
+  iconWidth?: 54 | 80 | 110;
   leading?: ReactNode;
 };
 
 /** Keep text column aligned across cards; wider icons compensate with more negative margin. */
 const iconLayoutClass = {
+  54: "h-[47px] w-[54px] ml-[1px] -mr-[6px]",
   80: "h-[70px] w-[80px] -ml-[10px] -mr-[20px]",
   110: "h-[70px] w-[110px] -ml-[30px] -mr-[30px]",
+} as const;
+
+const iconHeight = {
+  54: 47,
+  80: 70,
+  110: 70,
 } as const;
 
 export default function EntryCard({
@@ -36,7 +43,7 @@ export default function EntryCard({
             src={iconSrc}
             alt=""
             width={iconWidth}
-            height={70}
+            height={iconHeight[iconWidth]}
             aria-hidden
             className={`${iconLayoutClass[iconWidth]} shrink-0 object-contain`}
           />

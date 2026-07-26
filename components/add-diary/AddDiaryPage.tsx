@@ -12,7 +12,9 @@ import RecordPhotoManagerSection from "@/components/add-diary/RecordPhotoManager
 import { useAuth } from "@/src/hooks/useAuth";
 import {
   createRecord,
+  DUPLICATE_GROUP_ORDER_RECORD_MESSAGE,
   getRecord,
+  getMyRecordByGroupOrderId,
   updateRecord,
 } from "@/src/services/record";
 import { uploadRecordPhoto } from "@/src/services/record-photo";
@@ -20,10 +22,28 @@ import {
   listRecordFoods,
   replaceRecordFoods,
 } from "@/src/services/record-food";
+import { listMyOrderItems } from "@/src/services/group-order-item";
+import { getGroupOrder } from "@/src/services/group-order";
 
 type AddDiaryPageProps =
-  | { mode?: "create"; restaurantId: string; recordId?: never }
-  | { mode: "edit"; recordId: string; restaurantId?: never };
+  | {
+      mode?: "create";
+      restaurantId: string;
+      recordId?: never;
+      groupOrderId?: never;
+    }
+  | {
+      mode: "create-from-order";
+      groupOrderId: string;
+      restaurantId?: never;
+      recordId?: never;
+    }
+  | {
+      mode: "edit";
+      recordId: string;
+      restaurantId?: never;
+      groupOrderId?: never;
+    };
 
 type ToastState = {
   type: "success" | "error";
@@ -43,13 +63,33 @@ function todayIsoDate(): string {
   return `${y}-${m}-${d}`;
 }
 
+/** Local calendar date YYYY-MM-DD from an ISO timestamp. */
+function isoDateFromTimestamp(iso: string | null | undefined): string | null {
+  if (!iso) {
+    return null;
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export default function AddDiaryPage(props: AddDiaryPageProps) {
   const router = useRouter();
   const { user } = useAuth();
   const isEdit = props.mode === "edit";
+  const isFromOrder = props.mode === "create-from-order";
   const recordId = isEdit ? props.recordId : null;
-  const restaurantId = !isEdit ? props.restaurantId : null;
+  const groupOrderId = isFromOrder ? props.groupOrderId : null;
+  const initialRestaurantId = !isEdit && !isFromOrder ? props.restaurantId : null;
 
+  const [restaurantId, setRestaurantId] = useState<string | null>(
+    initialRestaurantId,
+  );
   const [visitDate, setVisitDate] = useState(todayIsoDate);
   const [rating, setRating] = useState(4);
   const [notes, setNotes] = useState("");
@@ -57,7 +97,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadStatus, setLoadStatus] = useState<LoadStatus>(
-    isEdit ? "loading" : "ready",
+    isEdit || isFromOrder ? "loading" : "ready",
   );
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [toast, setToast] = useState<ToastState>(null);
@@ -100,6 +140,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
           return;
         }
 
+        setRestaurantId(row.restaurant_id);
         setVisitDate(row.visit_date);
         setRating(row.rating);
         setNotes(row.notes);
@@ -120,6 +161,73 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
       cancelled = true;
     };
   }, [isEdit, recordId, loadAttempt, user]);
+
+  useEffect(() => {
+    if (!isFromOrder || !groupOrderId) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadFromOrder() {
+      setLoadStatus("loading");
+
+      try {
+        const existing = await getMyRecordByGroupOrderId(groupOrderId!);
+        if (cancelled) {
+          return;
+        }
+        if (existing) {
+          router.replace(`/records/${existing.id}`);
+          return;
+        }
+
+        const order = await getGroupOrder(groupOrderId!);
+        if (cancelled) {
+          return;
+        }
+        if (!order || order.status !== "COMPLETED") {
+          setLoadStatus("not-found");
+          return;
+        }
+
+        const myItems = await listMyOrderItems(order.id);
+        if (cancelled) {
+          return;
+        }
+
+        const foodNames = myItems
+          .filter((item) => item.quantity > 0)
+          .map((item) => item.menuItemName.trim())
+          .filter(Boolean);
+
+        if (foodNames.length === 0) {
+          setLoadStatus("not-found");
+          return;
+        }
+
+        const orderDate =
+          isoDateFromTimestamp(order.completedAt) ??
+          isoDateFromTimestamp(order.createdAt) ??
+          todayIsoDate();
+
+        setRestaurantId(order.restaurantId);
+        setVisitDate(orderDate);
+        setFoodRows(foodNames);
+        setLoadStatus("ready");
+      } catch {
+        if (!cancelled) {
+          setLoadStatus("error");
+        }
+      }
+    }
+
+    void loadFromOrder();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isFromOrder, groupOrderId, loadAttempt, router]);
 
   function showToast(type: "success" | "error", message: string) {
     setToast({ type, message });
@@ -175,6 +283,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
         visitDate,
         rating,
         notes: trimmedNotes,
+        groupOrderId: groupOrderId,
       });
 
       for (const file of pendingPhotos) {
@@ -192,13 +301,33 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
         router.push(`/records/${created.id}`);
         navigateTimerRef.current = null;
       }, SUCCESS_NAVIGATE_MS);
-    } catch {
-      showToast("error", "儲存失敗，請稍後再試");
+    } catch (error) {
+      const message =
+        error instanceof Error &&
+        error.message === DUPLICATE_GROUP_ORDER_RECORD_MESSAGE
+          ? DUPLICATE_GROUP_ORDER_RECORD_MESSAGE
+          : "儲存失敗，請稍後再試";
+      showToast("error", message);
       setIsSubmitting(false);
+
+      if (
+        error instanceof Error &&
+        error.message === DUPLICATE_GROUP_ORDER_RECORD_MESSAGE &&
+        groupOrderId
+      ) {
+        try {
+          const existing = await getMyRecordByGroupOrderId(groupOrderId);
+          if (existing) {
+            router.replace(`/records/${existing.id}`);
+          }
+        } catch {
+          // Keep toast only.
+        }
+      }
     }
   }
 
-  if (isEdit && loadStatus === "loading") {
+  if ((isEdit || isFromOrder) && loadStatus === "loading") {
     return (
       <div className="home-grid-bg min-h-full">
         <div className="animate-pulse px-5 pt-4" aria-hidden>
@@ -209,7 +338,7 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
     );
   }
 
-  if (isEdit && loadStatus === "error") {
+  if ((isEdit || isFromOrder) && loadStatus === "error") {
     return (
       <div className="home-grid-bg flex min-h-full flex-col items-center gap-3 px-5 pt-16 text-center">
         <p className="text-sm font-medium text-cocoa">載入紀錄失敗</p>
@@ -238,9 +367,27 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
     );
   }
 
+  if (isFromOrder && (loadStatus === "not-found" || !restaurantId)) {
+    return (
+      <div className="home-grid-bg flex min-h-full flex-col items-center gap-3 px-5 pt-16 text-center">
+        <p className="text-sm font-medium text-cocoa">
+          無法從此共同點餐建立美食日記
+        </p>
+        <Link
+          href={groupOrderId ? `/orders/${groupOrderId}` : "/orders"}
+          className="rounded-full bg-caramel px-6 py-2.5 text-sm font-bold text-rice-white shadow-button"
+        >
+          返回共同點餐
+        </Link>
+      </div>
+    );
+  }
+
   const backHref = isEdit
     ? `/records/${recordId}`
-    : `/restaurants/${restaurantId}`;
+    : isFromOrder && groupOrderId
+      ? `/orders/${groupOrderId}`
+      : `/restaurants/${restaurantId}`;
   const title = isEdit ? "編輯用餐紀錄" : "新增用餐紀錄";
 
   return (

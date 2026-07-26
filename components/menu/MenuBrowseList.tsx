@@ -27,10 +27,18 @@ type MenuBrowseListProps = {
   onDecrement?: (item: MenuItem) => void;
   busyMenuItemId?: string | null;
   controlsDisabled?: boolean;
+  /**
+   * When set, long-press copies the item name (browse mode only).
+   * Not used when quantity controls are active.
+   */
+  onCopyItemName?: (name: string) => void;
 };
 
 const ALL_CATEGORY = "全部";
 const DRAG_THRESHOLD_PX = 5;
+const LONG_PRESS_MS = 480;
+const MOVE_CANCEL_PX = 10;
+const PRESS_FLASH_MS = 150;
 
 function formatPrice(price: number | null): string {
   if (price === null) {
@@ -51,16 +59,23 @@ export default function MenuBrowseList({
   onDecrement,
   busyMenuItemId = null,
   controlsDisabled = false,
+  onCopyItemName,
 }: MenuBrowseListProps) {
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [flashItemId, setFlashItemId] = useState<string | null>(null);
   const chipScrollRef = useRef<HTMLDivElement | null>(null);
 
   const isDraggingRef = useRef(false);
   const draggedRef = useRef(false);
   const dragStartXRef = useRef(0);
   const dragStartScrollRef = useRef(0);
+
+  const longPressTimerRef = useRef<number | null>(null);
+  const longPressStartRef = useRef<{ x: number; y: number } | null>(null);
+  const longPressFiredRef = useRef(false);
+  const flashTimerRef = useRef<number | null>(null);
 
   const searchableItems = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -122,6 +137,17 @@ export default function MenuBrowseList({
     };
   }, [categories.length, searchableItems.length]);
 
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current != null) {
+        window.clearTimeout(longPressTimerRef.current);
+      }
+      if (flashTimerRef.current != null) {
+        window.clearTimeout(flashTimerRef.current);
+      }
+    };
+  }, []);
+
   const visibleItems =
     selectedCategory === ALL_CATEGORY ||
     !categories.includes(selectedCategory)
@@ -133,6 +159,81 @@ export default function MenuBrowseList({
     !categories.includes(selectedCategory)
       ? ALL_CATEGORY
       : selectedCategory;
+
+  const showControls = Boolean(getQuantity && onIncrement && onDecrement);
+  const quickCopyEnabled = Boolean(onCopyItemName) && !showControls;
+
+  function clearLongPressTimer() {
+    if (longPressTimerRef.current != null) {
+      window.clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    longPressStartRef.current = null;
+  }
+
+  function flashItem(itemId: string) {
+    setFlashItemId(itemId);
+    if (flashTimerRef.current != null) {
+      window.clearTimeout(flashTimerRef.current);
+    }
+    flashTimerRef.current = window.setTimeout(() => {
+      setFlashItemId(null);
+      flashTimerRef.current = null;
+    }, PRESS_FLASH_MS);
+  }
+
+  async function copyItemName(item: MenuItem) {
+    const name = item.name.trim();
+    if (!name || !onCopyItemName) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(name);
+      flashItem(item.id);
+      onCopyItemName(name);
+    } catch {
+      // Clipboard may be blocked; still give light feedback.
+      flashItem(item.id);
+    }
+  }
+
+  function handleItemPointerDown(
+    event: ReactPointerEvent<HTMLLIElement>,
+    item: MenuItem,
+  ) {
+    if (!quickCopyEnabled) {
+      return;
+    }
+    // Ignore secondary buttons / multi-touch.
+    if (event.button !== 0) {
+      return;
+    }
+
+    longPressFiredRef.current = false;
+    longPressStartRef.current = { x: event.clientX, y: event.clientY };
+    clearLongPressTimer();
+    longPressTimerRef.current = window.setTimeout(() => {
+      longPressTimerRef.current = null;
+      longPressFiredRef.current = true;
+      void copyItemName(item);
+    }, LONG_PRESS_MS);
+  }
+
+  function handleItemPointerMove(event: ReactPointerEvent<HTMLLIElement>) {
+    if (!quickCopyEnabled || !longPressStartRef.current) {
+      return;
+    }
+    const dx = event.clientX - longPressStartRef.current.x;
+    const dy = event.clientY - longPressStartRef.current.y;
+    if (Math.hypot(dx, dy) > MOVE_CANCEL_PX) {
+      clearLongPressTimer();
+    }
+  }
+
+  function handleItemPointerEnd() {
+    clearLongPressTimer();
+  }
 
   function scrollByStep(direction: 1 | -1) {
     const el = chipScrollRef.current;
@@ -267,13 +368,29 @@ export default function MenuBrowseList({
 
       <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-rice-white shadow-soft">
         {visibleItems.map((item) => {
-          const showControls = Boolean(getQuantity && onIncrement && onDecrement);
           const quantity = getQuantity?.(item) ?? 0;
           const busy = busyMenuItemId === item.id;
+          const flashing = flashItemId === item.id;
           return (
             <li
               key={item.id}
-              className="flex items-center justify-between gap-3 px-4 py-3"
+              onPointerDown={(event) => handleItemPointerDown(event, item)}
+              onPointerMove={handleItemPointerMove}
+              onPointerUp={handleItemPointerEnd}
+              onPointerLeave={handleItemPointerEnd}
+              onPointerCancel={handleItemPointerEnd}
+              onContextMenu={(event) => {
+                if (quickCopyEnabled) {
+                  event.preventDefault();
+                }
+              }}
+              className={`flex items-center justify-between gap-3 px-4 py-3 transition-[transform,background-color] duration-150 ${
+                quickCopyEnabled ? "select-none touch-manipulation" : ""
+              } ${
+                flashing
+                  ? "scale-[0.985] bg-sakura-pink/40"
+                  : "bg-transparent scale-100"
+              }`}
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-deep-brown">

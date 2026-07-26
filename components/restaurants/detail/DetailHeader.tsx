@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Ellipsis, Heart, Pencil, RefreshCw, Share } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -58,6 +59,7 @@ export default function DetailHeader({
   onSyncGoogle,
   onToast,
 }: DetailHeaderProps) {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -110,13 +112,14 @@ export default function DetailHeader({
 
   return (
     <header className="grid grid-cols-3 items-center px-5 pt-4 pb-2">
-      <Link
-        href="/restaurants"
-        aria-label="返回"
+      <button
+        type="button"
+        aria-label="返回上一頁"
+        onClick={() => router.back()}
         className={`${iconButtonClass} justify-self-start`}
       >
         <ArrowLeft className="h-5 w-5" strokeWidth={2} />
-      </Link>
+      </button>
       <div />
       <div className="flex items-center gap-2 justify-self-end">
         <button

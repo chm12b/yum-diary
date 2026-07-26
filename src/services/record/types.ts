@@ -5,6 +5,8 @@ export type CreateRecordInput = {
   visitDate: string;
   rating: number;
   notes: string;
+  /** Link to a completed group order (optional). */
+  groupOrderId?: string | null;
 };
 
 export type UpdateRecordInput = {

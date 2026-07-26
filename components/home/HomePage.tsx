@@ -22,6 +22,7 @@ function HomeEntriesSkeleton() {
     <div className="mt-4 flex animate-pulse flex-col gap-4 px-5" aria-hidden>
       <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
       <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
+      <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
     </div>
   );
 }
@@ -114,6 +115,7 @@ export default function HomePage() {
           <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
           <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
           <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
+          <div className="h-[88px] w-full rounded-[1.25rem] bg-border/80" />
         </div>
       ) : (
         <>
@@ -144,7 +146,7 @@ export default function HomePage() {
 
           {showHasData ? (
             <div aria-label={`已收藏 ${restaurants.length} 間餐廳`}>
-              <HomeEntryList />
+              <HomeEntryList revision={revision} />
             </div>
           ) : null}
         </>
