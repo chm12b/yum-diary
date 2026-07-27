@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import CategoryChip from "@/components/restaurants/CategoryChip";
 import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
@@ -20,6 +20,7 @@ import {
   type DecideFilters,
 } from "@/src/services/decide";
 import { getReferenceLocation } from "@/src/services/groups/group.service";
+import { listRestaurantLocationOptions } from "@/src/services/restaurant";
 
 type ToastState = {
   type: "success" | "error";
@@ -30,6 +31,9 @@ const TOAST_MS = 1800;
 
 const iconButtonClass =
   "flex h-9 w-9 items-center justify-center rounded-full border border-border bg-rice-white/95 text-deep-brown shadow-soft";
+
+const selectClassName =
+  "mt-1.5 h-11 w-full appearance-none rounded-xl border border-border bg-cream-bg/60 px-3 text-sm text-deep-brown outline-none transition-colors focus:border-caramel";
 
 const DISTANCE_OPTIONS: Array<{
   value: DecideDistanceKm;
@@ -58,10 +62,25 @@ function FilterSection({
   );
 }
 
+function sameDecideFilters(a: DecideFilters, b: DecideFilters): boolean {
+  return (
+    a.onlyOpen === b.onlyOpen &&
+    a.city === b.city &&
+    a.district === b.district &&
+    a.maxDistanceKm === b.maxDistanceKm &&
+    a.favoriteMode === b.favoriteMode &&
+    sameSelectedCategories(a.selectedCategories, b.selectedCategories)
+  );
+}
+
 export default function DecideSettingsPage() {
-  const { revision } = useCurrentGroup();
+  const { currentGroupId, revision } = useCurrentGroup();
   const [ready, setReady] = useState(false);
   const [hasReferenceLocation, setHasReferenceLocation] = useState(false);
+  const [cities, setCities] = useState<string[]>([]);
+  const [districtsByCity, setDistrictsByCity] = useState<
+    Record<string, string[]>
+  >({});
   const [filters, setFilters] = useState<DecideFilters>(() => ({
     ...DEFAULT_DECIDE_FILTERS,
     selectedCategories: [...DEFAULT_DECIDE_FILTERS.selectedCategories],
@@ -88,53 +107,93 @@ export default function DecideSettingsPage() {
     }, TOAST_MS);
   }
 
-  async function loadReferenceLocation() {
-    try {
-      const { data, error } = await getReferenceLocation();
-      const configured =
-        !error &&
-        data?.lat != null &&
-        data.lng != null &&
-        Number.isFinite(data.lat) &&
-        Number.isFinite(data.lng);
-
-      setHasReferenceLocation(configured);
-    } catch {
-      setHasReferenceLocation(false);
-    }
-  }
-
   useEffect(() => {
-    const prefs = loadDecidePreferences();
-    setFilters(prefs);
-
+    let cancelled = false;
     const frame = window.requestAnimationFrame(() => {
-      void loadReferenceLocation().finally(() => {
-        setReady(true);
-      });
+      void (async () => {
+        const prefs = loadDecidePreferences();
+        if (!cancelled) {
+          setFilters(prefs);
+        }
+
+        try {
+          const { data, error } = await getReferenceLocation();
+          if (cancelled) {
+            return;
+          }
+          const configured =
+            !error &&
+            data?.lat != null &&
+            data.lng != null &&
+            Number.isFinite(data.lat) &&
+            Number.isFinite(data.lng);
+
+          setHasReferenceLocation(configured);
+        } catch {
+          if (!cancelled) {
+            setHasReferenceLocation(false);
+          }
+        }
+
+        if (!currentGroupId) {
+          if (!cancelled) {
+            setCities([]);
+            setDistrictsByCity({});
+            setReady(true);
+          }
+          return;
+        }
+
+        try {
+          const options = await listRestaurantLocationOptions(currentGroupId);
+          if (!cancelled) {
+            setCities(options.cities);
+            setDistrictsByCity(options.districtsByCity);
+          }
+        } catch {
+          if (!cancelled) {
+            setCities([]);
+            setDistrictsByCity({});
+          }
+        } finally {
+          if (!cancelled) {
+            setReady(true);
+          }
+        }
+      })();
     });
 
     return () => {
+      cancelled = true;
       window.cancelAnimationFrame(frame);
     };
-  }, [revision]);
+  }, [revision, currentGroupId]);
 
   function updateFilters(next: DecideFilters) {
-    if (
-      next.onlyOpen === filters.onlyOpen &&
-      next.maxDistanceKm === filters.maxDistanceKm &&
-      next.favoriteMode === filters.favoriteMode &&
-      sameSelectedCategories(
-        next.selectedCategories,
-        filters.selectedCategories,
-      )
-    ) {
+    if (sameDecideFilters(next, filters)) {
       return;
     }
 
     setFilters(next);
     saveDecidePreferences(next);
     showToast("success", "已更新「今天吃什麼」設定。");
+  }
+
+  function handleSelectCity(raw: string) {
+    const nextCity = raw.trim() || null;
+    updateFilters({
+      ...filters,
+      city: nextCity,
+      district: null,
+    });
+  }
+
+  function handleSelectDistrict(raw: string) {
+    const nextDistrict = raw.trim() || null;
+    updateFilters({
+      ...filters,
+      district: nextDistrict,
+    });
   }
 
   function handleSelectAllCategories() {
@@ -157,6 +216,24 @@ export default function DecideSettingsPage() {
   }
 
   const allSelected = filters.selectedCategories.length === 0;
+
+  const cityOptions = useMemo(() => {
+    if (filters.city && !cities.includes(filters.city)) {
+      return [filters.city, ...cities];
+    }
+    return cities;
+  }, [cities, filters.city]);
+
+  const districtOptions = useMemo(() => {
+    if (!filters.city) {
+      return [];
+    }
+    const fromCity = districtsByCity[filters.city] ?? [];
+    if (filters.district && !fromCity.includes(filters.district)) {
+      return [filters.district, ...fromCity];
+    }
+    return fromCity;
+  }, [districtsByCity, filters.city, filters.district]);
 
   return (
     <div className="home-grid-bg min-h-full pb-8">
@@ -208,6 +285,59 @@ export default function DecideSettingsPage() {
                 />
                 排除目前未營業的餐廳
               </label>
+            </FilterSection>
+
+            <FilterSection title="🏙 城市／行政區">
+              {cityOptions.length === 0 ? (
+                <p className="text-sm leading-relaxed text-text-secondary">
+                  目前群組還沒有可篩選的城市資料。
+                  <br />
+                  新增餐廳後即可使用。
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="text-sm font-medium text-deep-brown">
+                      📍 城市
+                    </span>
+                    <select
+                      value={filters.city ?? ""}
+                      onChange={(event) =>
+                        handleSelectCity(event.target.value)
+                      }
+                      className={selectClassName}
+                    >
+                      <option value="">全部</option>
+                      {cityOptions.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium text-deep-brown">
+                      🏘 行政區
+                    </span>
+                    <select
+                      value={filters.district ?? ""}
+                      onChange={(event) =>
+                        handleSelectDistrict(event.target.value)
+                      }
+                      disabled={!filters.city}
+                      className={`${selectClassName} disabled:cursor-not-allowed disabled:opacity-60`}
+                    >
+                      <option value="">全部</option>
+                      {districtOptions.map((district) => (
+                        <option key={district} value={district}>
+                          {district}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
             </FilterSection>
 
             <FilterSection title="📍 距離">

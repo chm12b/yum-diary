@@ -18,6 +18,10 @@ export type DecideFavoriteMode = "all" | "favorites";
 
 export type DecideFilters = {
   onlyOpen: boolean;
+  /** Exact city match; null means any. */
+  city: string | null;
+  /** Exact district match; null means any. Requires city when set. */
+  district: string | null;
   maxDistanceKm: DecideDistanceKm;
   favoriteMode: DecideFavoriteMode;
   selectedCategories: AppCategory[];
@@ -115,6 +119,16 @@ export async function getDecideCandidates(
       const status = resolveOpenStatus(row.business_hours);
       return status !== "closed" && status !== "holiday";
     });
+  }
+
+  const city = filters.city?.trim() || null;
+  if (city) {
+    candidates = candidates.filter((row) => row.city?.trim() === city);
+  }
+
+  const district = filters.district?.trim() || null;
+  if (district) {
+    candidates = candidates.filter((row) => row.district?.trim() === district);
   }
 
   if (filters.maxDistanceKm != null && reference) {

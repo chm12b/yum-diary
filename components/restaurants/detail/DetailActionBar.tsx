@@ -14,6 +14,7 @@ import { listMenuItems } from "@/src/services/menu-item";
 type DetailActionBarProps = {
   restaurantId: string;
   restaurantName: string;
+  isArchived?: boolean;
   onToast: (type: "success" | "error", message: string) => void;
 };
 
@@ -25,6 +26,7 @@ const MENU_REQUIRED_TOAST_MS = 4500;
 export default function DetailActionBar({
   restaurantId,
   restaurantName,
+  isArchived = false,
   onToast,
 }: DetailActionBarProps) {
   const router = useRouter();
@@ -44,6 +46,10 @@ export default function DetailActionBar({
   }, []);
 
   const handleOpenCreate = useCallback(async () => {
+    if (isArchived) {
+      onToast("error", "此餐廳已封存，無法發起共同點餐。");
+      return;
+    }
     if (checkingMenu) {
       return;
     }
@@ -68,10 +74,14 @@ export default function DetailActionBar({
     } finally {
       setCheckingMenu(false);
     }
-  }, [checkingMenu, onToast, restaurantId]);
+  }, [checkingMenu, isArchived, onToast, restaurantId]);
 
   const handleSubmit = useCallback(
     async (values: CreateGroupOrderFormValues) => {
+      if (isArchived) {
+        onToast("error", "此餐廳已封存，無法發起共同點餐。");
+        return;
+      }
       if (!currentGroupId) {
         onToast("error", "請先選擇群組");
         return;
@@ -86,17 +96,27 @@ export default function DetailActionBar({
           groupId: currentGroupId,
           restaurantId,
           title: values.title,
-          description: values.description || null,
           closeAt: values.closeAt,
         });
         setOpen(false);
         router.push(`/orders/${order.id}`);
-      } catch {
-        onToast("error", "建立點餐失敗");
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message === "Restaurant is archived"
+            ? "此餐廳已封存，無法發起共同點餐。"
+            : "建立點餐失敗";
+        onToast("error", message);
         setSubmitting(false);
       }
     },
-    [currentGroupId, onToast, restaurantId, router, submitting],
+    [
+      currentGroupId,
+      isArchived,
+      onToast,
+      restaurantId,
+      router,
+      submitting,
+    ],
   );
 
   return (
@@ -114,8 +134,8 @@ export default function DetailActionBar({
           onClick={() => {
             void handleOpenCreate();
           }}
-          disabled={checkingMenu}
-          className={quickActionClass}
+          disabled={checkingMenu || isArchived}
+          className={`${quickActionClass} disabled:opacity-55`}
         >
           <span aria-hidden>🍽</span>
           揪團點餐

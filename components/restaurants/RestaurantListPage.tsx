@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import RestaurantEmptyState from "@/components/home/RestaurantEmptyState";
 import TopBar from "@/components/layout/TopBar";
@@ -37,6 +37,8 @@ import {
 
 type LoadStatus = "loading" | "ready" | "error";
 
+const ARCHIVED_TOAST_MS = 1800;
+
 export default function RestaurantListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,6 +47,7 @@ export default function RestaurantListPage() {
 
   const isNearbyQuickBrowse =
     searchParams.get(NEARBY_QUICK_BROWSE_QUERY) === "1";
+  const showArchivedToast = searchParams.get("archived") === "1";
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState<RestaurantFilter>({});
@@ -59,6 +62,8 @@ export default function RestaurantListPage() {
     Record<string, string[]>
   >({});
   const [reloadToken, setReloadToken] = useState(0);
+  const [archivedToastVisible, setArchivedToastVisible] = useState(false);
+  const archivedToastTimerRef = useRef<number | null>(null);
 
   const referenceLat = currentGroup?.referenceLat ?? null;
   const referenceLng = currentGroup?.referenceLng ?? null;
@@ -79,6 +84,41 @@ export default function RestaurantListPage() {
     setSort(NEARBY_QUICK_BROWSE_SORT);
   }, [isNearbyQuickBrowse]);
 
+  useEffect(() => {
+    if (!showArchivedToast) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      setArchivedToastVisible(true);
+      router.replace("/restaurants");
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [showArchivedToast, router]);
+
+  useEffect(() => {
+    if (!archivedToastVisible) {
+      return;
+    }
+
+    if (archivedToastTimerRef.current != null) {
+      window.clearTimeout(archivedToastTimerRef.current);
+    }
+    archivedToastTimerRef.current = window.setTimeout(() => {
+      setArchivedToastVisible(false);
+      archivedToastTimerRef.current = null;
+    }, ARCHIVED_TOAST_MS);
+
+    return () => {
+      if (archivedToastTimerRef.current != null) {
+        window.clearTimeout(archivedToastTimerRef.current);
+        archivedToastTimerRef.current = null;
+      }
+    };
+  }, [archivedToastVisible]);
 
   useEffect(() => {
     if (groupLoading || !currentGroupId) {
@@ -265,6 +305,15 @@ export default function RestaurantListPage() {
           setFilterOpen(false);
         }}
       />
+
+      {archivedToastVisible ? (
+        <div
+          role="status"
+          className="fixed inset-x-0 bottom-[calc(var(--bottom-nav-height)+1rem)] z-50 mx-auto w-[min(100%-2rem,28rem)] rounded-2xl border border-caramel/30 bg-sakura-pink/80 px-4 py-3 text-center text-sm font-medium text-deep-brown shadow-card"
+        >
+          📦 已封存餐廳。
+        </div>
+      ) : null}
     </div>
   );
 }

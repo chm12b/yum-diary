@@ -6,7 +6,8 @@ import type {
 /** Home「逛逛附近餐廳」→ Restaurant List 預設條件。 */
 export const NEARBY_QUICK_BROWSE_FILTER: RestaurantFilter = {
   openStatus: "open",
-  maxDistanceMeters: 1000,
+  city: "台南市",
+  district: "安定區",
 };
 
 export const NEARBY_QUICK_BROWSE_SORT: RestaurantSort = "distance";

@@ -34,4 +34,9 @@ export type ListRestaurantsInput = {
   search?: string;
   /** Required for meaningful distance sort; falls back to newest when missing. */
   referencePoint?: GeoPoint | null;
+  /**
+   * When true, include archived restaurants (archived_at IS NOT NULL).
+   * Default false — general lists hide archived rows.
+   */
+  includeArchived?: boolean;
 };

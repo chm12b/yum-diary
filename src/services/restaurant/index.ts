@@ -1,5 +1,8 @@
 export { createRestaurant } from "./createRestaurant";
+export { archiveRestaurant } from "./archiveRestaurant";
+export { unarchiveRestaurant } from "./unarchiveRestaurant";
 export { getRestaurant } from "./getRestaurant";
+export { listArchivedRestaurants } from "./listArchivedRestaurants";
 export { listRestaurantNamesByIds } from "./listRestaurantNamesByIds";
 export {
   DEFAULT_RESTAURANT_SORT,

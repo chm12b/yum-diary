@@ -5,20 +5,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import ArchiveRestaurantDialog from "@/components/restaurants/detail/ArchiveRestaurantDialog";
 import {
   buildRestaurantShareMessage,
   buildRestaurantShareUrl,
 } from "@/src/lib/app-url";
+import { archiveRestaurant } from "@/src/services/restaurant";
 
 type DetailHeaderProps = {
   isFavorite: boolean;
   isFavoriteLoading?: boolean;
   restaurantId?: string;
   restaurantName?: string;
+  isArchived?: boolean;
   canSyncGoogle?: boolean;
   isSyncing?: boolean;
   onToggleFavorite?: () => void;
   onSyncGoogle?: () => void;
+  onArchived?: () => void;
   onToast?: (type: "success" | "error", message: string) => void;
 };
 
@@ -53,14 +57,18 @@ export default function DetailHeader({
   isFavoriteLoading = false,
   restaurantId,
   restaurantName = "",
+  isArchived = false,
   canSyncGoogle = false,
   isSyncing = false,
   onToggleFavorite,
   onSyncGoogle,
+  onArchived,
   onToast,
 }: DetailHeaderProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -110,100 +118,154 @@ export default function DetailHeader({
     }
   }
 
+  async function handleConfirmArchive() {
+    if (!restaurantId || archiving) {
+      return;
+    }
+
+    setArchiving(true);
+    try {
+      await archiveRestaurant(restaurantId);
+      setArchiveOpen(false);
+      onArchived?.();
+    } catch {
+      onToast?.("error", "封存失敗，請稍後再試。");
+      setArchiving(false);
+    }
+  }
+
   return (
-    <header className="grid grid-cols-3 items-center px-5 pt-4 pb-2">
-      <button
-        type="button"
-        aria-label="返回上一頁"
-        onClick={() => router.back()}
-        className={`${iconButtonClass} justify-self-start`}
-      >
-        <ArrowLeft className="h-5 w-5" strokeWidth={2} />
-      </button>
-      <div />
-      <div className="flex items-center gap-2 justify-self-end">
+    <>
+      <header className="grid grid-cols-3 items-center px-5 pt-4 pb-2">
         <button
           type="button"
-          aria-label={isFavorite ? "取消收藏" : "收藏"}
-          aria-pressed={isFavorite}
-          disabled={isFavoriteLoading || !onToggleFavorite}
-          onClick={onToggleFavorite}
-          className={iconButtonClass}
+          aria-label="返回上一頁"
+          onClick={() => router.back()}
+          className={`${iconButtonClass} justify-self-start`}
         >
-          <Heart
-            className={`h-5 w-5 ${
-              isFavorite ? "fill-sakura-pink text-caramel" : "text-deep-brown"
-            }`}
-            strokeWidth={2}
-          />
+          <ArrowLeft className="h-5 w-5" strokeWidth={2} />
         </button>
-        {restaurantId ? (
-          <div className="relative" ref={menuRef}>
-            <button
-              type="button"
-              aria-label="更多"
-              aria-expanded={menuOpen}
-              aria-haspopup="menu"
-              onClick={() => setMenuOpen((open) => !open)}
-              className={iconButtonClass}
-            >
-              <Ellipsis className="h-5 w-5" strokeWidth={2} />
-            </button>
-            {menuOpen ? (
-              <div
-                role="menu"
-                className="absolute top-11 right-0 z-30 min-w-[13.5rem] overflow-hidden rounded-2xl border border-border bg-rice-white py-1 shadow-card"
+        <div />
+        <div className="flex items-center gap-2 justify-self-end">
+          <button
+            type="button"
+            aria-label={isFavorite ? "取消收藏" : "收藏"}
+            aria-pressed={isFavorite}
+            disabled={isFavoriteLoading || !onToggleFavorite}
+            onClick={onToggleFavorite}
+            className={iconButtonClass}
+          >
+            <Heart
+              className={`h-5 w-5 ${
+                isFavorite ? "fill-sakura-pink text-caramel" : "text-deep-brown"
+              }`}
+              strokeWidth={2}
+            />
+          </button>
+          {restaurantId ? (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                aria-label="更多"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                onClick={() => setMenuOpen((open) => !open)}
+                className={iconButtonClass}
               >
-                <Link
-                  href={`/restaurants/${restaurantId}/edit`}
-                  role="menuitem"
-                  onClick={() => setMenuOpen(false)}
-                  className={menuItemClass}
+                <Ellipsis className="h-5 w-5" strokeWidth={2} />
+              </button>
+              {menuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute top-11 right-0 z-30 min-w-[13.5rem] overflow-hidden rounded-2xl border border-border bg-rice-white py-1 shadow-card"
                 >
-                  <Pencil className="h-4 w-4 shrink-0 text-caramel" strokeWidth={2} />
-                  編輯餐廳
-                </Link>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    void handleShare();
-                  }}
-                  className={menuItemClass}
-                >
-                  <Share className="h-4 w-4 shrink-0 text-caramel" strokeWidth={2} />
-                  分享餐廳
-                </button>
-                {canSyncGoogle ? (
+                  <Link
+                    href={`/restaurants/${restaurantId}/edit`}
+                    role="menuitem"
+                    onClick={() => setMenuOpen(false)}
+                    className={menuItemClass}
+                  >
+                    <Pencil
+                      className="h-4 w-4 shrink-0 text-caramel"
+                      strokeWidth={2}
+                    />
+                    編輯餐廳
+                  </Link>
                   <button
                     type="button"
                     role="menuitem"
-                    disabled={isSyncing}
                     onClick={() => {
                       setMenuOpen(false);
-                      onSyncGoogle?.();
+                      void handleShare();
                     }}
                     className={menuItemClass}
                   >
-                    <RefreshCw
-                      className={`h-4 w-4 shrink-0 text-caramel ${
-                        isSyncing ? "animate-spin" : ""
-                      }`}
+                    <Share
+                      className="h-4 w-4 shrink-0 text-caramel"
                       strokeWidth={2}
                     />
-                    {isSyncing ? "同步中..." : "重新同步 Google 資料"}
+                    分享餐廳
                   </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <button type="button" aria-label="更多" className={iconButtonClass}>
-            <Ellipsis className="h-5 w-5" strokeWidth={2} />
-          </button>
-        )}
-      </div>
-    </header>
+                  {canSyncGoogle ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={isSyncing}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onSyncGoogle?.();
+                      }}
+                      className={menuItemClass}
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 shrink-0 text-caramel ${
+                          isSyncing ? "animate-spin" : ""
+                        }`}
+                        strokeWidth={2}
+                      />
+                      {isSyncing ? "同步中..." : "重新同步 Google 資料"}
+                    </button>
+                  ) : null}
+                  {!isArchived ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setArchiveOpen(true);
+                      }}
+                      className={menuItemClass}
+                    >
+                      <span aria-hidden className="w-4 shrink-0 text-center">
+                        📦
+                      </span>
+                      封存餐廳
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <button type="button" aria-label="更多" className={iconButtonClass}>
+              <Ellipsis className="h-5 w-5" strokeWidth={2} />
+            </button>
+          )}
+        </div>
+      </header>
+
+      <ArchiveRestaurantDialog
+        open={archiveOpen}
+        restaurantName={restaurantName}
+        submitting={archiving}
+        onClose={() => {
+          if (!archiving) {
+            setArchiveOpen(false);
+          }
+        }}
+        onConfirm={() => {
+          void handleConfirmArchive();
+        }}
+      />
+    </>
   );
 }

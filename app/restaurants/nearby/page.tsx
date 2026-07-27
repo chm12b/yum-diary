@@ -166,7 +166,10 @@ export default function NearbyImportPage() {
           return;
         }
 
-        const rows = await listRestaurants(currentGroupId);
+        const rows = await listRestaurants({
+          groupId: currentGroupId,
+          includeArchived: true,
+        });
         const ids = rows
           .map((r) => r.google_place_id?.trim() ?? "")
           .filter((id) => id.length > 0);

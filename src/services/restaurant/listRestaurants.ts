@@ -145,10 +145,11 @@ function applyClientSort(
  * List restaurants for a group with optional filter / sort / search.
  *
  * Backward compatible:
- * - `listRestaurants(groupId)` — same as before (newest)
- * - `listRestaurants({ groupId, filter, sort, search, referencePoint })`
+ * - `listRestaurants(groupId)` — same as before (newest), excludes archived
+ * - `listRestaurants({ groupId, filter, sort, search, referencePoint, includeArchived })`
  *
  * openStatus uses existing resolveOpenStatus() — does not re-implement hours logic.
+ * By default archived_at IS NULL only; pass includeArchived: true to include archived.
  */
 export async function listRestaurants(
   groupIdOrOptions: string | ListRestaurantsInput,
@@ -167,6 +168,12 @@ export async function listRestaurants(
     .from("restaurants")
     .select("*")
     .eq("group_id", groupId);
+
+  // General lists hide archived restaurants unless explicitly included
+  // (e.g. Nearby Import dedupe by google_place_id).
+  if (!options.includeArchived) {
+    query = query.is("archived_at", null);
+  }
 
   const city = filter?.city?.trim();
   if (city) {

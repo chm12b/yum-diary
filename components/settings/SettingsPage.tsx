@@ -137,6 +137,13 @@ export default function SettingsPage() {
           />
           <RowDivider />
           <SettingsRow
+            emoji="📦"
+            label="已封存餐廳"
+            subtitle="查看與管理已封存的餐廳。"
+            href="/settings/restaurants/archived"
+          />
+          <RowDivider />
+          <SettingsRow
             emoji="ℹ️"
             label="關於 Yum Diary"
             href="/settings/about"

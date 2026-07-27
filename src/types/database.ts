@@ -130,6 +130,7 @@ export type Database = {
           business_hours: Json | null;
           last_google_sync_at: string | null;
           restaurant_cover_path: string | null;
+          archived_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -157,6 +158,7 @@ export type Database = {
           business_hours?: Json | null;
           last_google_sync_at?: string | null;
           restaurant_cover_path?: string | null;
+          archived_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -184,6 +186,7 @@ export type Database = {
           business_hours?: Json | null;
           last_google_sync_at?: string | null;
           restaurant_cover_path?: string | null;
+          archived_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

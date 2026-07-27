@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import DetailActionBar from "@/components/restaurants/detail/DetailActionBar";
@@ -63,6 +64,7 @@ function referenceFromGroup(
 }
 
 export default function DetailPage({ restaurantId }: DetailPageProps) {
+  const router = useRouter();
   const { revision, currentGroup } = useCurrentGroup();
   const reference = useMemo(
     () => referenceFromGroup(currentGroup),
@@ -455,6 +457,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         isFavoriteLoading={isFavoriteToggleLoading || !isFavoriteResolved}
         restaurantId={restaurant.id}
         restaurantName={restaurant.name}
+        isArchived={restaurantRow?.archived_at != null}
         canSyncGoogle={Boolean(restaurant.googlePlaceId)}
         isSyncing={isSyncing}
         onSyncGoogle={() => {
@@ -462,6 +465,9 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
         }}
         onToggleFavorite={() => {
           void handleToggleFavorite();
+        }}
+        onArchived={() => {
+          router.push("/restaurants?archived=1");
         }}
         onToast={showToast}
       />
@@ -481,6 +487,7 @@ export default function DetailPage({ restaurantId }: DetailPageProps) {
       <DetailActionBar
         restaurantId={restaurant.id}
         restaurantName={restaurant.name}
+        isArchived={restaurantRow?.archived_at != null}
         onToast={showToast}
       />
 

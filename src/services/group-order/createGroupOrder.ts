@@ -51,7 +51,7 @@ export async function createGroupOrder(
 
   const { data: restaurant, error: restaurantError } = await supabase
     .from("restaurants")
-    .select("id, group_id")
+    .select("id, group_id, archived_at")
     .eq("id", restaurantId)
     .maybeSingle();
 
@@ -63,6 +63,9 @@ export async function createGroupOrder(
   }
   if (restaurant.group_id !== groupId) {
     throw new Error("Restaurant does not belong to this group");
+  }
+  if (restaurant.archived_at != null) {
+    throw new Error("Restaurant is archived");
   }
 
   const row: GroupOrderInsert = {

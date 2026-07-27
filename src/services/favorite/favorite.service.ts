@@ -94,6 +94,7 @@ export async function listFavoriteRestaurants(): Promise<RestaurantRecord[]> {
     .select("restaurants!inner(*)")
     .eq("user_id", user.id)
     .eq("restaurants.group_id", profile.current_group_id)
+    .is("restaurants.archived_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {

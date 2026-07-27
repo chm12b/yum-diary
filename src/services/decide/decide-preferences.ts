@@ -9,10 +9,23 @@ const STORAGE_KEY = "yum-diary:decide-filters";
 
 export const DEFAULT_DECIDE_FILTERS: DecideFilters = {
   onlyOpen: true,
+  city: null,
+  district: null,
   maxDistanceKm: 3,
   favoriteMode: "all",
   selectedCategories: [],
 };
+
+function parseOptionalTrimmedString(value: unknown): string | null {
+  if (value == null) {
+    return null;
+  }
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
 
 function isDecideDistanceKm(value: unknown): value is DecideDistanceKm {
   return value === null || value === 1 || value === 3 || value === 5;
@@ -75,6 +88,27 @@ function parseDecideFilters(value: unknown): DecideFilters | null {
     return null;
   }
 
+  // Missing city/district (legacy saves) → treat as unrestricted.
+  if (
+    record.city !== undefined &&
+    record.city !== null &&
+    typeof record.city !== "string"
+  ) {
+    return null;
+  }
+  if (
+    record.district !== undefined &&
+    record.district !== null &&
+    typeof record.district !== "string"
+  ) {
+    return null;
+  }
+
+  const city = parseOptionalTrimmedString(record.city ?? null);
+  const district = city
+    ? parseOptionalTrimmedString(record.district ?? null)
+    : null;
+
   const selectedCategories =
     parseSelectedCategories(record.selectedCategories) ??
     migrateLegacyCategory(record.category);
@@ -85,6 +119,8 @@ function parseDecideFilters(value: unknown): DecideFilters | null {
 
   return {
     onlyOpen: record.onlyOpen,
+    city,
+    district,
     maxDistanceKm: record.maxDistanceKm,
     favoriteMode: record.favoriteMode,
     selectedCategories,

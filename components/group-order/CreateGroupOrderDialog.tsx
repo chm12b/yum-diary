@@ -2,15 +2,11 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 
-import {
-  GROUP_ORDER_DESCRIPTION_MAX,
-  GROUP_ORDER_TITLE_MAX,
-} from "@/src/services/group-order";
+import { GROUP_ORDER_TITLE_MAX } from "@/src/services/group-order";
 
 export type CreateGroupOrderFormValues = {
   title: string;
   closeAt: string;
-  description: string;
 };
 
 type CreateGroupOrderDialogProps = {
@@ -51,7 +47,6 @@ function CreateGroupOrderDialogBody({
 }: DialogBodyProps) {
   const [title, setTitle] = useState(() => defaultTitle(restaurantName));
   const [closeAt, setCloseAt] = useState(() => defaultCloseAtLocal());
-  const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,7 +91,6 @@ function CreateGroupOrderDialogBody({
     await onSubmit({
       title: trimmedTitle,
       closeAt,
-      description: description.trim(),
     });
   }
 
@@ -153,24 +147,6 @@ function CreateGroupOrderDialogBody({
               disabled={isSubmitting}
               onChange={(event) => setCloseAt(event.target.value)}
               className="mt-1.5 w-full rounded-xl border border-border bg-cream-bg/40 px-3 py-2.5 text-sm text-deep-brown outline-none transition-colors focus:border-caramel disabled:opacity-70"
-            />
-          </label>
-
-          <label className="mt-4 block">
-            <span className="text-sm font-medium text-deep-brown">
-              說明
-              <span className="ml-1 font-normal text-text-secondary">
-                （選填）
-              </span>
-            </span>
-            <textarea
-              value={description}
-              maxLength={GROUP_ORDER_DESCRIPTION_MAX}
-              disabled={isSubmitting}
-              rows={3}
-              onChange={(event) => setDescription(event.target.value)}
-              className="mt-1.5 w-full resize-none rounded-xl border border-border bg-cream-bg/40 px-3 py-2.5 text-sm text-deep-brown outline-none transition-colors focus:border-caramel disabled:opacity-70"
-              placeholder="例如：飲料我來訂，大家留言口味"
             />
           </label>
 
