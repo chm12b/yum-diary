@@ -342,7 +342,9 @@ export default function AddRestaurantPage({
           window.setTimeout(resolve, SUCCESS_TOAST_MS);
         });
 
-        router.push(`/restaurants/${restaurantId}`);
+        // Return to the existing Detail entry under edit (do not replace-with-detail,
+        // or history becomes Detail → Detail and back must be pressed twice).
+        router.back();
         return;
       }
 

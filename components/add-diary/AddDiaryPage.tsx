@@ -268,7 +268,9 @@ export default function AddDiaryPage(props: AddDiaryPageProps) {
           window.clearTimeout(navigateTimerRef.current);
         }
         navigateTimerRef.current = window.setTimeout(() => {
-          router.push(`/records/${recordId}`);
+          // Return to the existing Detail entry under edit (do not replace-with-detail,
+          // or history becomes Detail → Detail and back must be pressed twice).
+          router.back();
           navigateTimerRef.current = null;
         }, SUCCESS_NAVIGATE_MS);
         return;
