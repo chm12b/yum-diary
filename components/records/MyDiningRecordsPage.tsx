@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import MyDiningRecordCard, {
   type MyDiningRecordCardData,
 } from "@/components/records/MyDiningRecordCard";
+import { useCurrentGroup } from "@/src/hooks/useCurrentGroup";
 import { homeAssets } from "@/src/lib/home-assets";
 import { listMyRecords } from "@/src/services/record";
 import { listRecordFoodsByRecordIds } from "@/src/services/record-food";
@@ -46,6 +47,8 @@ async function fetchMyDiningRecordCards(): Promise<
 }
 
 export default function MyDiningRecordsPage() {
+  const { revision, currentGroupId, loading: groupLoading } =
+    useCurrentGroup();
   const [status, setStatus] = useState<LoadStatus>("loading");
   const [records, setRecords] = useState<MyDiningRecordCardData[]>([]);
 
@@ -62,26 +65,46 @@ export default function MyDiningRecordsPage() {
   }
 
   useEffect(() => {
+    if (groupLoading) {
+      return;
+    }
+
     let cancelled = false;
 
-    void fetchMyDiningRecordCards()
-      .then((nextRecords) => {
+    const frame = window.requestAnimationFrame(() => {
+      void (async () => {
         if (!cancelled) {
-          setRecords(nextRecords);
-          setStatus("ready");
+          setStatus("loading");
         }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setRecords([]);
-          setStatus("error");
+
+        if (!currentGroupId) {
+          if (!cancelled) {
+            setRecords([]);
+            setStatus("ready");
+          }
+          return;
         }
-      });
+
+        try {
+          const nextRecords = await fetchMyDiningRecordCards();
+          if (!cancelled) {
+            setRecords(nextRecords);
+            setStatus("ready");
+          }
+        } catch {
+          if (!cancelled) {
+            setRecords([]);
+            setStatus("error");
+          }
+        }
+      })();
+    });
 
     return () => {
       cancelled = true;
+      window.cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [revision, currentGroupId, groupLoading]);
 
   if (status === "loading") {
     return (
