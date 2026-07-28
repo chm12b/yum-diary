@@ -17,6 +17,12 @@ export {
   isImageFile,
 } from "./image";
 export {
+  COMPRESS_IMAGE_MAX_EDGE_PX,
+  COMPRESS_IMAGE_WEBP_QUALITY,
+  compressImage,
+  fitWithinMaxEdge,
+} from "./compressImage";
+export {
   SUPPORTED_IMAGE_MIME_TYPES,
   WEBP_MIME_TYPE,
   isImageMimeType,

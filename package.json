@@ -9,7 +9,9 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "backfill:city-district": "tsx --env-file=.env.local scripts/backfill-city-district.ts"
+    "backfill:city-district": "tsx --env-file=.env.local scripts/backfill-city-district.ts",
+    "migrate:photo-compression": "tsx --env-file=.env.local scripts/migratePhotoCompression.ts",
+    "migrate:photo-compression:execute": "tsx --env-file=.env.local scripts/migratePhotoCompression.ts --execute"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -26,9 +28,10 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4",
-    "typescript": "^5",
     "tsx": "^4.20.3",
+    "typescript": "^5",
     "vitest": "^3.2.4"
   }
 }

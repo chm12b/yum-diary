@@ -1,7 +1,8 @@
 /**
  * Image helpers for the storage layer.
  *
- * Foundation only: validation + basic metadata. No compression / conversion.
+ * Validation + metadata live here. Compression / WebP conversion is in
+ * `compressImage.ts` and is applied by `uploadPhoto`.
  */
 
 import { isImageMimeType } from "./mime";
@@ -14,7 +15,7 @@ export function isImageFile(file: Blob): boolean {
 /**
  * Throw when a file declares a non-image MIME type.
  * A blank type (e.g. a raw Blob) is allowed through — it cannot be validated
- * here and the storage content type falls back to webp.
+ * here and compression still produces WebP for storage.
  */
 export function assertImageFile(file: Blob): void {
   const type = file.type ?? "";
@@ -25,7 +26,8 @@ export function assertImageFile(file: Blob): void {
 
 /**
  * Read intrinsic pixel dimensions of an image blob (browser only).
- * Useful later for cover selection; not used for compression.
+ * Useful for cover selection / UI previews; compression uses createImageBitmap
+ * independently inside compressImage().
  */
 export async function getImageDimensions(
   file: Blob,

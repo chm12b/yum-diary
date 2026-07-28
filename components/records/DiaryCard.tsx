@@ -66,6 +66,8 @@ export default function DiaryCard({ record }: DiaryCardProps) {
                       fill
                       className="object-cover"
                       sizes="88px"
+                      loading="lazy"
+                      decoding="async"
                       unoptimized
                     />
                   </div>

@@ -68,6 +68,8 @@ export default function MyDiningRecordCard({
               fill
               className="object-cover"
               sizes="112px"
+              loading="lazy"
+              decoding="async"
               unoptimized
             />
           </div>

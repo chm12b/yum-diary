@@ -13,7 +13,7 @@ export type UploadOptions = {
   contentType?: string;
   /** Overwrite an existing object at the same path. Defaults to true. */
   upsert?: boolean;
-  /** Cache-Control max-age in seconds. Defaults to "3600". */
+  /** Cache-Control max-age in seconds. Defaults to "31536000" (1 year). */
   cacheControl?: string;
 };
 

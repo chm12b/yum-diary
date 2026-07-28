@@ -175,6 +175,8 @@ export default function CoverPhotoField({
               <img
                 src={displayUrl}
                 alt="Google 店家照片預覽"
+                loading="lazy"
+                decoding="async"
                 className="aspect-[16/10] w-full object-cover"
               />
               <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-deep-brown/55 px-3 py-2">

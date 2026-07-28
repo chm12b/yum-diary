@@ -56,6 +56,8 @@ export default function RestaurantCard({
               src={restaurant.imageUrl}
               alt={restaurant.name}
               fill
+              loading="lazy"
+              decoding="async"
               className="object-cover"
             />
           </div>

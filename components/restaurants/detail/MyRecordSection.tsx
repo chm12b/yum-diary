@@ -113,6 +113,8 @@ export default function MyRecordSection({
                     fill
                     className="object-cover"
                     sizes="110px"
+                    loading="lazy"
+                    decoding="async"
                     unoptimized
                   />
                 </div>

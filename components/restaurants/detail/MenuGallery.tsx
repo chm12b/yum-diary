@@ -166,6 +166,8 @@ export default function MenuGallery({
                   fill
                   sizes="112px"
                   className="object-cover"
+                  loading="lazy"
+                  decoding="async"
                   draggable={false}
                   unoptimized
                 />
