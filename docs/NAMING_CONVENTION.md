@@ -1,7 +1,7 @@
 # Yum Diary Naming Convention
 
-**Version:** 1.0  
-**Last Updated:** 2026-07-13  
+**Version:** 1.1  
+**Last Updated:** 2026-08-03  
 **Related:** `docs/PROJECT_SPEC.md`, `docs/FEATURES.md`, `docs/DATABASE.md`
 
 ---
@@ -135,7 +135,8 @@ Service 函式使用 **動詞 + Entity**（camelCase）。
 - `listRestaurants`
 - `getRestaurant`
 - `updateRestaurant`
-- `deleteRestaurant`
+- `archiveRestaurant`
+- `unarchiveRestaurant`
 - `joinGroup`
 - `createGroup`
 
@@ -235,7 +236,7 @@ Boolean 一律以 **`is` / `has` / `can`** 開頭（TypeScript 為 camelCase）�
 - `archive`
 - `open`（語意模糊，易與動詞混淆）
 
-Database 對應欄位使用 snake_case，例如 `is_cover`、`is_archived`。
+Database 對應欄位使用 snake_case，例如 `is_cover`、`archived_at`。
 
 ---
 

@@ -419,10 +419,12 @@ export default function AddRestaurantPage({
   function finishWizard() {
     const id = createdRestaurantId;
     if (!id) {
-      router.push("/restaurants");
+      router.replace("/restaurants");
       return;
     }
-    router.push(`/restaurants/${id}`);
+    // Replace the create flow in history so Detail back() returns
+    // to the real previous page instead of reopening the wizard.
+    router.replace(`/restaurants/${id}`);
   }
 
   if (isEdit && loadError) {

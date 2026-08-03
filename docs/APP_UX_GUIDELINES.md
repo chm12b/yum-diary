@@ -1,8 +1,8 @@
 # Yum Diary UI / UX Guidelines
 
 **Product:** Yum Diary  
-**Version:** v1.0  
-**Last Updated:** 2026-07-16  
+**Version:** v1.1  
+**Last Updated:** 2026-08-03  
 **Related:** `docs/PROJECT_SPEC.md`, `docs/GROUP_UX_SPEC.md`, `docs/PROJECT_STATUS.md`
 
 ---
@@ -144,13 +144,13 @@ Yum Diary 是一款療癒系、手帳風的美食日記 App。
 
 ### 4.8 Dialog
 
-只有不可逆操作才使用，例如：
+用於需確認的操作，例如：
 
-- 刪除
-- 離開群組
-- 解散群組
+- 刪除／移除資料
+- 離開群組、解散群組
+- 封存餐廳、恢復封存
 
-一般流程避免 Dialog。
+一般流程避免不必要 Dialog。
 
 ---
 
@@ -186,10 +186,19 @@ Timeline：提供快速回憶。不要塞過多資訊。
 | 區域 | 職責 |
 |------|------|
 | Header | 切換目前 Group |
-| Bottom Navigation | 內容導向 |
-| Settings | 所有管理功能 |
+| Bottom Navigation | 首頁、餐廳、FAB 新增、收藏、設定 |
+| Settings | 群組管理、位置、Decide 條件、已封存餐廳、登出等 |
 
 不要把管理入口放 Header。
+
+美食日記、揪團點餐、常吃餐廳等由 Home 入口進入（不佔 bottom tab）。
+
+### 7.1 History / navigation
+
+編輯完成後避免同一頁 push 兩次 detail，造成「返回又回到編輯」。
+
+- 編輯成功：優先 `router.back()` 或 `replace`，勿再 `push` 回 Detail
+- 新增餐廳 Wizard 完成：`replace` 到 Detail／列表
 
 ---
 

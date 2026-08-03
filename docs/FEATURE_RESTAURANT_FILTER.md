@@ -1,328 +1,123 @@
 # FEATURE: Restaurant Filter
 
-Status: Planned
+Status: ✅ Completed（MVP）  
+Last Updated: 2026-08-03
 
 ---
 
 # Overview
 
-當餐廳數量增加（100+ 間以上）時，僅依靠搜尋與滑動列表已難以快速找到目標餐廳。
+當餐廳數量增加時，僅依靠搜尋與滑動列表已難以快速找到目標餐廳。
 
-Restaurant Filter 提供多種篩選條件，讓使用者能快速縮小搜尋範圍，同時保留簡潔、療癒的介面設計。
+Restaurant Filter 提供多條件篩選，讓使用者縮小範圍，同時保留簡潔手帳 UI。
 
-本功能以可擴充為目標，未來新增篩選條件時，不需修改主要 UI。
-
----
-
-# Goals
-
-- 快速找到指定地區的餐廳
-- 減少大量滑動列表
-- 支援多條件組合篩選
-- 保持 Restaurant List 介面簡潔
-- 方便未來持續擴充
+城市／行政區為 **data-driven**（依目前群組內既有餐廳的 `city` / `district`），不寫死清單。
 
 ---
 
-# UI
+# Implemented UI
 
-Restaurant List 搜尋列：
+Restaurant List 搜尋列 + 右側篩選入口 → Bottom Sheet。
 
-```
-┌──────────────────────────────┐
-│ 🔍 搜尋餐廳...          ⚙️ │
-└──────────────────────────────┘
-```
+## Filter Panel 項目（已上線）
 
-點擊右側 Filter Icon 後，由 Bottom Sheet 顯示篩選介面。
-
----
-
-# Filter Panel
-
-提供以下篩選項目：
-
+- 距離（需群組預設位置；`maxDistanceMeters`）
 - 城市 (City)
-- 行政區 (District)
+- 行政區 (District；依所選城市連動)
 - 類別 (Category)
-- Google 評分 (Google Rating)
 - 營業狀態 (Open Status)
-- 收藏 (Favorite)
 
-Bottom Sheet：
+## Filter Chips
 
-```
-──────────────
+套用後在搜尋框下方顯示可單獨移除的條件 chip。
 
-篩選
+## Sort（已上線）
 
-──────────────
+- 距離最近（需 reference 位置）
+- 最近新增
+- 名稱
+- Google 評分高→低／低→高
 
-城市
-全部 ▼
+## Search
 
-行政區
-全部 ▼
-
-類別
-全部 ▼
-
-Google 評分
-不限 ▼
-
-營業狀態
-全部 ▼
-
-收藏
-全部 ▼
-
-──────────────
-
-重設        套用
-```
-
----
-
-# Filter Chips
-
-套用篩選後，搜尋框下方顯示目前條件。
-
-例如：
-
-```
-📍 嘉義市 ✕
-
-🏘 東區 ✕
-
-🍜 日式 ✕
-
-⭐ 4.5+ ✕
-```
-
-每個 Chip 可單獨移除。
+- 店名
+- 地址
+- city
+- district
 
 ---
 
 # Database
 
-restaurants 新增欄位：
+`restaurants` 欄位：
 
-- city
-- district
+- `city` text null（migration `028`）
+- `district` text null
 
-未來若支援海外餐廳，可再擴充：
+寫入時機：
 
-- country
+- Create／Update 時以 Address Parser（`resolveCityDistrict`）自地址解析
+- 失敗時不強制阻擋；Edit 時解析失敗不覆寫既有 city/district
 
-目前 UI 僅使用 city、district。
+Backfill：
 
----
-
-# Address Parser
-
-新增：
-
-src/lib/address/taiwan-address.ts
-
-提供：
-
-parseTaiwanAddress(address)
-
-回傳：
-
-```
-{
-  city,
-  district
-}
+```bash
+npm run backfill:city-district
 ```
 
-例如：
-
-```
-嘉義市東區民族路123號
-```
-
-解析：
-
-```
-city = 嘉義市
-
-district = 東區
-```
+（`scripts/backfill-city-district.ts` + Service Role Key）
 
 ---
 
-# Restaurant Create
+# Query Layer
 
-新增餐廳時：
+`listRestaurants({ groupId, filter, sort, search, referencePoint, includeArchived })`
 
-Google Address
+Filter 欄位（`RestaurantFilter`）：
 
-↓
+- `city`
+- `district`
+- `category`
+- `openStatus`
+- `maxDistanceMeters`
 
-parseTaiwanAddress()
+預設：
 
-↓
-
-一起寫入：
-
-- city
-- district
-
----
-
-# Backfill
-
-提供一次性 Script：
-
-scripts/backfill-city-district.ts
-
-用途：
-
-讀取所有既有餐廳地址
-
-↓
-
-解析城市、行政區
-
-↓
-
-UPDATE Database
-
-僅需執行一次。
+- `includeArchived: false`（`archived_at IS NULL`）
+- 排序預設 `distance`
 
 ---
 
-# Restaurant Search
+# Home：逛逛附近餐廳
 
-搜尋支援：
+首頁入口帶 query flag：`/restaurants?nearby=1`
 
-- Restaurant Name
-- Address
-- City
-- District
+預設條件（`src/lib/restaurants/nearby-quick-browse.ts`）：
 
-例如：
-
-搜尋：
-
-```
-文化路
-```
-
-可找到文化路上的餐廳。
-
-搜尋：
-
-```
-東區
-```
-
-可找到所有東區餐廳。
+- `openStatus: "open"`
+- `city: "台南市"`
+- `district: "安定區"`
+- 排序：`distance`  
+（已移除早期「1 公里內」距離條件）
 
 ---
 
-# Restaurant Filter
+# Decide 設定
 
-Restaurant Query 支援：
-
-- city
-- district
-- category
-- favorite
-- google_rating
-- open_status
-
-所有條件可自由組合。
-
-例如：
-
-- 嘉義市
-- 東區
-- 日式
-- 評分 4.5+
-- 收藏
+「今天吃什麼」設定頁亦有城市／行政區篩選，偏好存 **localStorage**（與 List 共用 location options 資料來源）。
 
 ---
 
-# Dynamic Data
+# Not in MVP Panel（Future）
 
-城市、行政區不得寫死於程式。
-
-城市：
-
-依據 restaurants.city 自動取得。
-
-行政區：
-
-依據目前選擇的城市，自動取得對應 district。
-
-未來新增城市時，不需修改任何程式。
-
----
-
-# Future Expansion
-
-預留以下功能：
-
-- Distance
-- My Location
-- Google Map Mode
-- Price Level
-- Has Menu
-- Has Photos
-- My Rating
-- Recently Visited
-- Smart Recommendation
-
-Filter Panel 可持續增加新項目，不需修改主要版面。
-
----
-
-# Development Plan
-
-## Phase 1
-
-- Database Migration
-- city
-- district
-
----
-
-## Phase 2
-
-- Address Parser
-
----
-
-## Phase 3
-
-- Restaurant Create
-- Backfill Script
-
----
-
-## Phase 4
-
-- Filter UI
-- Bottom Sheet
-- Filter Chips
-
----
-
-## Phase 5
-
-- Restaurant Query
-- Multi-condition Filter
-- Search Enhancement
+- Google Rating 下限
+- Favorite-only filter（收藏有獨立 `/favorites` 頁）
+- Map mode、價格級距 chips 等擴充
 
 ---
 
 # Design Principles
 
-- 保持畫面簡潔
-- 篩選集中於 Filter Panel
-- 支援大量餐廳（100+）
-- 採用 Data-driven 設計
-- 容易擴充新功能
+- 畫面簡潔；進階條件集中於 Sheet
+- Data-driven city／district
+- 可擴充 filter key，不必改主列表骨架

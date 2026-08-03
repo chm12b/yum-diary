@@ -1,8 +1,8 @@
 # Yum Diary Project Specification
 
-**Version:** 1.0  
-**Status:** MVP Development  
-**Last Updated:** 2026-07-12
+**Version:** 1.1  
+**Status:** MVP（核心模組已可使用）  
+**Last Updated:** 2026-08-03
 
 ---
 
@@ -67,62 +67,67 @@ Google Places（搜尋、Detail、照片預覽）用來加速建檔。核心流�
 
 ### 3.3 Menu 永遠由使用者自行建立
 
-菜單照片與內容不由 Google Auto Fill 帶入，也不依賴外部平台同步。菜單屬於使用者的收藏內容。
+菜單照片與結構化品項不由 Google Auto Fill 帶入。可選 AI 僅協助整理 JSON，寫入前仍由使用者確認。
 
 ### 3.4 Google 店家照片只是預設封面
 
-從 Google 取得的店家照片僅作為可預覽／可替換的預設封面，不是最終資產來源。正式保存時的下載、Storage 與替換規則另訂；使用者應能移除或改為自行上傳。
+從 Google 取得的店家照片僅作為可預覽／可替換的預設封面。正式資產存於 Supabase Storage；使用者可移除或改為自行上傳。
 
 ### 3.5 Restaurant Database 永遠只存 App Category
 
-資料庫的餐廳分類欄位只儲存 Yum Diary 固定分類字串。Google `primaryType` 僅在匯入當下透過 Category Mapper 轉換，不得寫入資料庫作為分類來源。
+資料庫的餐廳分類欄位只儲存 Yum Diary 固定分類字串。Google `primaryType` 僅在匯入當下透過 Category Mapper 轉換。
 
 ### 3.6 分類固定，不允許自由建立
 
-App 分類清單固定，例如：早餐、小吃、飲料、日式、中式、韓式、南洋、西式、火鍋、甜點、其他。建立、編輯、篩選、統計共用同一份清單；使用者不可自訂新分類名稱。
+App 分類清單固定（例：早餐、小吃、飲料、日式、中式、韓式、南洋、西式、火鍋、甜點、其他）。建立、編輯、篩選、統計共用同一份清單。
 
 ### 3.7 UI 以療癒、手帳、簡潔、低學習成本為原則
 
-視覺與互動應維持溫暖的手帳／奶茶氣質，資訊層級清楚，避免地圖產品式的複雜排班或過多設定。營業時間等欄位以「好編輯、好維護」為優先；特殊例外用提示補足，不為少數案例把主流程 UI 做複雜。
+視覺與互動應維持溫暖的手帳／奶茶氣質，資訊層級清楚，避免地圖產品式的複雜排版或過多設定。
+
+### 3.8 Group-first
+
+Restaurant、Diary、Menu、Group Order 皆在「目前群組」脈絡下操作。資料以群組隔離；`profiles.current_group_id` 為唯一作用中群組。
+
+### 3.9 Soft archive，不硬刪歷史
+
+不想再看到的餐廳可封存（`archived_at`），從一般列表隱藏；日記、點餐、菜單等歷史仍保留。永久刪除非 v1 範圍。
 
 ---
 
-## 4. Core Features
+## 4. Core Features（產品範圍）
 
-以下為目前 MVP 範圍內的核心功能（規格層級，不含實作細節）。
+狀態細節見 `docs/FEATURES.md` 與 `docs/PROJECT_STATUS.md`。
 
-### Authentication
-
-帳號註冊、登入與工作階段維護。未完成群組設定的使用者進入 onboarding。
-
-### Group
-
-建立群組或加入既有群組。餐廳與收藏以群組為單位共享；使用者有目前作用中的群組脈絡。
-
-### Restaurant
-
-新增、檢視餐廳資料（店名、分類、地址、電話、網站、營業時間、封面、備註等）。支援手動建檔；儲存與清單以群組為範圍。
-
-### Google Search
-
-在新增餐廳流程中，可選使用 Google Places 文字搜尋。結果以精簡列表呈現（店名、地址、評分等），不暴露 Google API Key 於前端。
-
-### Google Auto Fill
-
-使用者點選搜尋結果後，經 Place Detail 帶入空白欄位（店名、地址、電話、網站、營業時間、分類、店家照片預覽等）。不覆蓋使用者已填內容；菜單與備註永不自動填入。分類經 Mapper 轉成 App Category。營業時間採簡化策略（最常見時段＋公休日；若各日不同則提示完整週曆）。
-
-### Restaurant Collection
-
-群組內的餐廳收藏庫：保存使用者在意的店家與其後續日記／紀錄的基礎單位。
-
-### Home
-
-登入且完成群組設定後的主要入口。提供問候、清單概覽與通往收藏／決策等主要路徑。
-
-### Restaurant List
-
-瀏覽群組內餐廳列表，支援依 App 固定分類等條件檢視（篩選細節以產品後續規格為準）。
+| 範圍 | 說明 |
+|------|------|
+| Authentication | 註冊、登入、登出、Session；密碼重設入口 |
+| Onboarding / Group | 建立或加入群組；Header 切換目前群組 |
+| Restaurant | 新增／編輯／列表／詳情／收藏／常吃／Nearby 匯入／封存 |
+| Google Assist | 搜尋、Auto Fill、Sync、封面預覽、Auto Geocoding |
+| Menu | 菜單照片 + 品項 CRUD + JSON 匯入 |
+| Diary | 美食日記 CRUD、照片、點的食物；範圍限目前群組 |
+| Decide | 今天吃什麼（可設營業中、地區、距離、收藏、分類） |
+| Group Order | 共同點餐、分享、截止、完成、訂單總覽 |
+| Settings | 個人、群組、位置、Decide 條件、已封存餐廳 |
+| Storage | WebP 壓縮上傳、公開路徑讀取 |
 
 ---
 
-*本文件為專案最高層規格。資料模型、介面細節、功能拆解與時程請見對應專題文件，並以本文件之原則為準。*
+## 5. Related Documents
+
+| 文件 | 內容 |
+|------|------|
+| `docs/PROJECT_STATUS.md` | 整體進度與模組快照 |
+| `docs/FEATURES.md` | 功能狀態清單 |
+| `docs/DATABASE.md` | 資料模型（對齊 migrations） |
+| `docs/GROUP_UX_SPEC.md` | 群組 UX |
+| `docs/GROUP_ORDER_SPEC.md` | 共同點餐規格 |
+| `docs/FEATURE_RESTAURANT_FILTER.md` | 餐廳篩選 |
+| `docs/AI_MENU_IMPORT_SPEC.md` | AI 菜單 JSON 規格 |
+| `docs/APP_UX_GUIDELINES.md` | UI／UX 指南 |
+| `docs/NAMING_CONVENTION.md` | 命名慣例 |
+
+---
+
+*本文件為專案最高層規格。實作細節以 repo 程式與 `supabase/migrations` 為準；與本文件衝突時應更新對應文件。*

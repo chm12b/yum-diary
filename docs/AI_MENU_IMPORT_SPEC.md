@@ -2,7 +2,9 @@
 
 # Yum Diary - AI Menu Import Specification
 
-Version: 1.0
+Version: 1.1  
+Last Updated: 2026-08-03  
+Status: ✅ App 支援貼上 JSON 批次匯入 menu_items
 
 ---
 
@@ -10,7 +12,9 @@ Version: 1.0
 
 將餐廳菜單整理成 Yum Diary 可匯入的 JSON。
 
-AI 的工作只有：
+**App 流程（實作）：** 使用者於外層工具整理／產生符合本規格之 JSON → 在 Menu 管理頁貼上匯入。App 不強制內建 LLM。
+
+AI／生成器的工作只有：
 
 1. 理解菜單
 2. 整理商品
