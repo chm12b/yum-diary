@@ -40,16 +40,21 @@ export default function AppStartup() {
   const router = useRouter();
   const pathname = usePathname();
   const { loading, session, getPostLoginPath } = useAuth();
-  const hasResolvedStartupRef = useRef(false);
+  /** last handled auth identity: "anon" | userId */
+  const lastHandledKeyRef = useRef<string | null>(null);
   const prevSessionRef = useRef<typeof session | undefined>(undefined);
 
-  // One-shot startup: restore session path (home / onboarding / auth).
+  // Startup path: re-run when session identity changes (not one-shot forever).
   useEffect(() => {
-    if (loading || hasResolvedStartupRef.current) {
+    if (loading) {
       return;
     }
 
-    hasResolvedStartupRef.current = true;
+    const sessionKey = session?.user.id ?? "anon";
+    if (lastHandledKeyRef.current === sessionKey) {
+      return;
+    }
+    lastHandledKeyRef.current = sessionKey;
     prevSessionRef.current = session;
 
     async function resolveStartupPath() {
@@ -104,6 +109,9 @@ export default function AppStartup() {
     if (session || !prevSession) {
       return;
     }
+
+    // Reset so next sign-in re-resolves post-login path.
+    lastHandledKeyRef.current = null;
 
     if (isPublicAuthPath(pathname)) {
       return;

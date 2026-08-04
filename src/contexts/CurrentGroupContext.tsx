@@ -12,11 +12,10 @@ import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/src/hooks/useAuth";
 import {
-  getGroup,
+  resolveAndHealCurrentGroup,
   switchCurrentGroup as switchCurrentGroupService,
   type CurrentGroup,
 } from "@/src/services/groups/group.service";
-import { getCurrentGroupId } from "@/src/services/profile/profile.service";
 
 export type CurrentGroupContextValue = {
   /** Convenience alias for currentGroup?.id ?? null. */
@@ -52,19 +51,14 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
       return;
     }
 
-    const { data: profile, error: profileError } = await getCurrentGroupId(
-      user.id,
-    );
-
-    if (profileError || !profile?.current_group_id) {
+    try {
+      const { data } = await resolveAndHealCurrentGroup(user.id);
+      setCurrentGroup(data);
+    } catch {
       setCurrentGroup(null);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const { data } = await getGroup(profile.current_group_id);
-    setCurrentGroup(data);
-    setLoading(false);
   }, [user]);
 
   const syncAfterGroupChange = useCallback(async () => {
@@ -75,21 +69,15 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
       return;
     }
 
-    const { data: profile, error: profileError } = await getCurrentGroupId(
-      user.id,
-    );
-
-    if (profileError || !profile?.current_group_id) {
+    try {
+      const { data } = await resolveAndHealCurrentGroup(user.id);
+      setCurrentGroup(data);
+    } catch {
       setCurrentGroup(null);
+    } finally {
       setLoading(false);
       setRevision((value) => value + 1);
-      return;
     }
-
-    const { data } = await getGroup(profile.current_group_id);
-    setCurrentGroup(data);
-    setLoading(false);
-    setRevision((value) => value + 1);
   }, [user]);
 
   useEffect(() => {
@@ -99,7 +87,7 @@ export function CurrentGroupProvider({ children }: CurrentGroupProviderProps) {
 
     setLoading(true);
     void refresh();
-  }, [authLoading, pathname, refresh]);
+  }, [authLoading, pathname, refresh, user?.id]);
 
   const switchGroup = useCallback(
     async (groupId: string): Promise<{ ok: boolean }> => {

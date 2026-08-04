@@ -11,9 +11,11 @@ import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 
 import { createClient } from "@/src/lib/supabase/client";
 import * as authService from "@/src/services/auth/auth.service";
-import * as profileService from "@/src/services/profile/profile.service";
+import * as groupService from "@/src/services/groups/group.service";
 
+/** Events that should overwrite client auth state (include cold-start session). */
 const SYNC_EVENTS = new Set<AuthChangeEvent>([
+  "INITIAL_SESSION",
   "SIGNED_IN",
   "SIGNED_OUT",
   "TOKEN_REFRESHED",
@@ -52,14 +54,34 @@ function syncAuthState(
   setUser(session?.user ?? null);
 }
 
+/**
+ * Home if profile has a usable group, or membership exists (heal pointer).
+ * Onboarding only when user is not in any group.
+ */
 async function resolvePostLoginPath(userId: string): Promise<PostLoginPath> {
-  const { data, error } = await profileService.getCurrentGroupId(userId);
+  const { data } = await groupService.resolveAndHealCurrentGroup(userId);
+  return data ? "/" : "/onboarding";
+}
 
-  if (error || !data || data.current_group_id == null) {
-    return "/onboarding";
+/**
+ * Restore a session that is safe for PostgREST (JWT not only from storage).
+ * Prefer getUser() so expired access tokens are refreshed before UI loads.
+ */
+async function restoreValidatedSession(): Promise<Session | null> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    const { data } = await supabase.auth.getSession();
+    return data.session;
   }
 
-  return "/";
+  const { data } = await supabase.auth.getSession();
+  return data.session ?? null;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -72,13 +94,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function initializeAuth() {
       try {
-        const { data } = await authService.getSession();
+        const restored = await restoreValidatedSession();
 
         if (!isActive) {
           return;
         }
 
-        syncAuthState(data.session, setUser, setSession);
+        syncAuthState(restored, setUser, setSession);
       } finally {
         if (isActive) {
           setLoading(false);
@@ -93,6 +115,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!SYNC_EVENTS.has(event)) {
+        return;
+      }
+
+      // INITIAL_SESSION may race with restoreValidatedSession; prefer
+      // non-null session from either source to avoid clearing after restore.
+      if (event === "INITIAL_SESSION") {
+        if (nextSession) {
+          syncAuthState(nextSession, setUser, setSession);
+        }
         return;
       }
 

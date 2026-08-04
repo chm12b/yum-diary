@@ -329,6 +329,53 @@ export async function listMyGroups(): Promise<GroupResult<GroupListItem[]>> {
 }
 
 /**
+ * Resolve current group for UI: prefer profiles.current_group_id, else heal
+ * from memberships (first group + write-back current_group_id).
+ */
+export async function resolveAndHealCurrentGroup(
+  userId: string,
+): Promise<GroupResult<CurrentGroup | null>> {
+  const id = userId.trim();
+  if (!id) {
+    return { data: null, error: null };
+  }
+
+  const supabase = createClient();
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("current_group_id")
+    .eq("id", id)
+    .single();
+
+  const preferredId =
+    !profileError && profile?.current_group_id
+      ? profile.current_group_id
+      : null;
+
+  if (preferredId) {
+    const preferred = await getGroup(preferredId);
+    if (!preferred.error && preferred.data) {
+      return preferred;
+    }
+  }
+
+  const { data: groups, error: listError } = await listMyGroups();
+  if (listError) {
+    return { data: null, error: listError };
+  }
+  if (!groups.length) {
+    return { data: null, error: null };
+  }
+
+  const fallbackId = groups[0].id;
+  if (preferredId !== fallbackId) {
+    await setCurrentGroupId(id, fallbackId);
+  }
+
+  return getGroup(fallbackId);
+}
+
+/**
  * Load a group by id (data access only — no auth / profile lookup).
  */
 export async function getGroup(
